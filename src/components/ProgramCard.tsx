@@ -83,6 +83,7 @@ export interface ProgramCardProps {
   likes?: string | number;
   views?: string | number;
   onPress?: () => void;
+  hideMetrics?: boolean;
 }
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({
@@ -92,12 +93,13 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
   likes = "11K",
   views = "25K",
   onPress,
+  hideMetrics = false,
 }) => {
   const theme = useTheme();
   const iconColor = theme.white?.val ?? "#FFFFFF";
 
   return (
-    <CardContainer onPress={onPress}>
+    <CardContainer onPress={onPress} accessibilityRole="button" accessibilityLabel={`Xem chương trình ${title}`}>
       {/* Top-left Pill Badge */}
       <Badge>
         <BadgeText>{level}</BadgeText>
@@ -111,7 +113,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         </YStack>
 
         {/* Bottom-right Metrics */}
-        <MetricsContainer>
+        {!hideMetrics && <MetricsContainer>
           {likes !== undefined && (
             <MetricItem>
               <Feather name="heart" size={14} color={iconColor} />
@@ -124,7 +126,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
               <MetricText>{views}</MetricText>
             </MetricItem>
           )}
-        </MetricsContainer>
+        </MetricsContainer>}
       </XStack>
     </CardContainer>
   );
