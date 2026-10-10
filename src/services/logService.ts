@@ -8,16 +8,46 @@ export interface SetLog {
 }
 export type WorkoutLogs = Record<string, SetLog[]>;
 
-// TẠM THỜI: phải đối chiếu lại với Request body của POST /logs trên Swagger
-export const buildLogPayload = (planId: string | null, logs: WorkoutLogs) => ({
-  planId,
-  logs: Object.entries(logs).map(([exerciseId, sets]) => ({
+// POST /sessions: tạo buổi tập mới
+export const createSession = (planId: string, name: string) =>
+  axiosClient.post("/sessions", {
+    planId,
+    name,
+    scheduledDate: new Date().toISOString(),
+  });
+
+// POST /logs: mỗi lần gửi 1 bài tập
+export const submitExerciseLog = (
+  sessionId: string,
+  exerciseId: string,
+  sets: SetLog[],
+  notes = "",
+) =>
+  axiosClient.post("/logs", {
+    sessionId,
     exerciseId,
-    sets,
-  })),
-});
+    sets: sets.map((s) => ({
+      reps: s.reps,
+      weight: s.weight,
+      isCompleted: s.completed,
+    })),
+    notes,
+  });
 
-export const submitWorkoutLog = (payload: unknown) =>
-  axiosClient.post("/logs", payload);
+// Gửi toàn bộ logs trong Redux (mỗi bài tập 1 request)
+export const submitWorkoutLogs = async (
+  sessionId: string,
+  logs: WorkoutLogs,
+) => {
+  for (const [exerciseId, sets] of Object.entries(logs)) {
+    await submitExerciseLog(sessionId, exerciseId, sets);
+  }
+};
 
-export const getWorkoutLogs = () => axiosClient.get("/logs");
+// GET /sessions/plan/{planId}
+export const getSessionsByPlan = (planId: string) =>
+  axiosClient.get(`/sessions/plan/${planId}`);
+
+// GET /logs/session/{sessionId}
+export const getLogsBySession = (sessionId: string) =>
+  axiosClient.get(`/logs/session/${sessionId}`);
