@@ -1,5 +1,6 @@
 import axios from "axios";
 
+// eslint-disable-next-line import/no-named-as-default-member
 const axiosClient = axios.create({
   baseURL: "https://workout-app-backend-1hjq.onrender.com/api/v1",
   headers: {
