@@ -1,4 +1,16 @@
-import { createTamagui, createTokens } from "tamagui";
+import { Platform } from "react-native";
+import { createFont, createTamagui, createTokens } from "tamagui";
+
+const systemFont = createFont({
+  family: Platform.select({
+    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    default: "System",
+  }),
+  size: { 1: 11, 2: 12, 3: 13, 4: 14, 5: 16, 6: 18, 7: 20, 8: 22, 9: 28, 10: 32, true: 16 },
+  lineHeight: { 1: 15, 2: 16, 3: 18, 4: 20, 5: 22, 6: 24, 7: 26, 8: 28, 9: 34, 10: 38, true: 22 },
+  weight: { 4: "400", 6: "600", 7: "700", 8: "800" },
+  letterSpacing: { 4: 0 },
+});
 
 // 1. Define Tokens matching Thenx Design System Specs
 const tokens = createTokens({
@@ -110,6 +122,13 @@ const themes = {
 const appConfig = createTamagui({
   tokens,
   themes,
+  fonts: {
+    heading: systemFont,
+    body: systemFont,
+  },
+  settings: {
+    defaultFont: "body",
+  },
   defaultTheme: "dark",
 });
 

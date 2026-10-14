@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { YStack, ScrollView } from "tamagui";
-import { Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useDispatch } from "react-redux";
+import { useNavigation } from "@react-navigation/native";
 import { BaseText } from "../components/BaseText";
 import { BottomNav, TopHeader } from "../components";
+import { HomeScreenNavigationProp } from "../navigation/types";
 import { TodaySessionSection } from "../components/home/TodaySessionSection";
 import { PlanSection } from "../components/home/PlanSection";
 import { ExerciseSection } from "../components/home/ExerciseSection";
@@ -43,6 +44,7 @@ export default function HomeScreen({
   now?: Date;
 }) {
   const dispatch = useDispatch();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const scroll = useRef<any>(null);
   const positions = useRef<Record<string, number>>({ home: 0 });
   const [activeTab, setActiveTab] = useState("home");
@@ -100,11 +102,13 @@ export default function HomeScreen({
       }),
     );
 
-    Alert.alert(
-      "Bắt đầu buổi tập",
-      `Đã kích hoạt buổi tập: "${session.name}"\n(Session ID: ${session._id} đã sẵn sàng trong Redux store)`,
-      [{ text: "OK" }],
-    );
+    // Tự động chuyển hướng sang màn hình WorkoutSessionScreen
+    if (navigation?.navigate) {
+      navigation.navigate("WorkoutSession", {
+        planId: session.planId,
+        sessionId: session._id,
+      });
+    }
   };
 
   return (
