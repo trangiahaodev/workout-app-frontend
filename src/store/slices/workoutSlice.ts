@@ -1,11 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { SetLog } from "../../types";
 
-export interface SetLog {
-  setId: string;
-  reps: number;
-  weight: number;
-  isCompleted: boolean; // Khớp 100% với WorkoutLog.js ở Backend
-}
+export type { SetLog };
 
 export interface WorkoutState {
   isActive: boolean;
