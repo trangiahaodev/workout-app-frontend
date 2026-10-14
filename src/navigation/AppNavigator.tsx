@@ -2,6 +2,7 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import HomeScreen from "../screens/HomeScreen";
 import WorkoutSessionScreen from "../screens/WorkoutSessionScreen";
+import HistoryScreen from "../screens/HistoryScreen";
 import { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -19,6 +20,7 @@ export function AppNavigator() {
         name="WorkoutSession"
         component={WorkoutSessionScreen}
       />
+      <Stack.Screen name="History" component={HistoryScreen} />
     </Stack.Navigator>
   );
 }

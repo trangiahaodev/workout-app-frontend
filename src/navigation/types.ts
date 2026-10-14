@@ -9,6 +9,12 @@ export type RootStackParamList = {
         sessionId?: string;
       }
     | undefined;
+  History:
+    | {
+        planId?: string;
+        sessionId?: string;
+      }
+    | undefined;
 };
 
 export type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -24,4 +30,14 @@ export type WorkoutSessionScreenNavigationProp = NativeStackNavigationProp<
 export type WorkoutSessionScreenRouteProp = RouteProp<
   RootStackParamList,
   "WorkoutSession"
+>;
+
+export type HistoryScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "History"
+>;
+
+export type HistoryScreenRouteProp = RouteProp<
+  RootStackParamList,
+  "History"
 >;

@@ -7,12 +7,12 @@ import { RootState } from "../store";
 import {
   startWorkout,
   logSet,
-  finishWorkout,
 } from "../store/slices/workoutSlice";
 import axiosClient from "../api/axiosClient";
 import { Card, BaseText, PrimaryButton, TopHeader } from "../components";
 import { Exercise } from "../types";
 import { mockExercises } from "../components/home/mockData";
+import { useCompleteWorkout } from "../hooks/useCompleteWorkout";
 import {
   WorkoutSessionScreenNavigationProp,
   WorkoutSessionScreenRouteProp,
@@ -160,13 +160,24 @@ export default function WorkoutSessionScreen({
     }
   };
 
-  const handleComplete = () => {
-    // Tạm thời kết thúc buổi tập trong Redux
-    dispatch(finishWorkout());
+  const { complete, submitting } = useCompleteWorkout((result) => {
     if (propOnComplete) {
       propOnComplete();
-    } else if (navigation?.canGoBack?.()) {
-      navigation.goBack();
+    } else {
+      navigation.navigate("History", {
+        planId: result.planId ?? planId,
+        sessionId: result.sessionId ?? sessionId,
+      });
+    }
+  });
+
+  const handleComplete = async () => {
+    try {
+      await complete();
+    } catch {
+      if (propOnComplete) {
+        propOnComplete();
+      }
     }
   };
 
@@ -313,9 +324,9 @@ export default function WorkoutSessionScreen({
         ))}
 
         <PrimaryButton
-          title="HOÀN THÀNH BUỔI TẬP"
+          title={submitting ? "ĐANG LƯU KẾT QUẢ..." : "HOÀN THÀNH BUỔI TẬP"}
           marginBottom="$8"
-          disabled={doneCount === 0}
+          disabled={doneCount === 0 || submitting}
           onPress={handleComplete}
         />
       </ScrollView>

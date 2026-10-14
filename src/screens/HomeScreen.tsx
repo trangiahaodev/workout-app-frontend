@@ -244,6 +244,11 @@ export default function HomeScreen({
         ]}
         activeTabId={activeTab}
         onTabChange={(tab) => {
+          if (tab === "history") {
+            const activePlanId = homeData.plans[0]?._id;
+            navigation.navigate("History", { planId: activePlanId });
+            return;
+          }
           setActiveTab(tab);
           scroll.current?.scrollTo({
             y: positions.current[tab] ?? 0,
