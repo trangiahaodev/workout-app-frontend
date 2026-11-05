@@ -4,6 +4,7 @@ import { RootState } from "../store";
 import { finishWorkout } from "../store/slices/workoutSlice";
 import { createSession, submitWorkoutLogs } from "../services/logService";
 import { WorkoutSession } from "../types";
+import { DEFAULT_SESSION_ID } from "../components/home/mockData";
 
 export interface CompleteWorkoutResult {
   planId?: string;
@@ -56,7 +57,7 @@ export function useCompleteWorkout(
       }
 
       if (!targetSessionId) {
-        targetSessionId = "670c1a333333333333333301"; // Fallback 24-hex ObjectId
+        targetSessionId = DEFAULT_SESSION_ID; // Fallback 24-hex ObjectId
       }
 
       // Gửi logs nếu có bài tập đã hoàn thành

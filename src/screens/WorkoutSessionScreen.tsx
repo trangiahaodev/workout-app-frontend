@@ -11,7 +11,11 @@ import {
 import axiosClient from "../api/axiosClient";
 import { Card, BaseText, PrimaryButton, TopHeader } from "../components";
 import { Exercise } from "../types";
-import { mockExercises } from "../components/home/mockData";
+import {
+  mockExercises,
+  DEFAULT_PLAN_ID,
+  DEFAULT_SESSION_ID,
+} from "../components/home/mockData";
 import { useCompleteWorkout } from "../hooks/useCompleteWorkout";
 import {
   WorkoutSessionScreenNavigationProp,
@@ -48,12 +52,12 @@ export default function WorkoutSessionScreen({
     propPlanId ??
     route.params?.planId ??
     workoutState.planId ??
-    "670c1a222222222222222201";
+    DEFAULT_PLAN_ID;
   const sessionId =
     propSessionId ??
     route.params?.sessionId ??
     workoutState.sessionId ??
-    "670c1a333333333333333301";
+    DEFAULT_SESSION_ID;
 
   const [list, setList] = useState<Exercise[]>(propExercises);
   const [inputs, setInputs] = useState<
