@@ -7,12 +7,14 @@ export interface TopHeaderProps {
   title?: string;
   subtitle?: string;
   onProfilePress?: () => void;
+  onBack?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   title = "WORKOUT LOG",
   subtitle = "Chào buổi sáng, Hảo!",
   onProfilePress,
+  onBack,
 }) => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -28,36 +30,56 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       borderColor="$borderColor"
       alignItems="center"
       justifyContent="space-between">
-      <YStack gap="$0.5">
-        <Text
-          fontSize={20}
-          fontWeight="800"
-          color="$white"
-          textTransform="uppercase"
-          letterSpacing={0.5}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text fontSize={13} color="$textSecondary" fontWeight="500">
-            {subtitle}
-          </Text>
+      <XStack alignItems="center" gap="$3" flex={1}>
+        {onBack ? (
+          <XStack
+            width={40}
+            height={40}
+            borderRadius="$pill"
+            borderWidth={1}
+            borderColor="$borderColor"
+            alignItems="center"
+            justifyContent="center"
+            backgroundColor="$cardBg"
+            onPress={onBack}
+            pressStyle={{ opacity: 0.7 }}>
+            <Feather name="arrow-left" size={20} color={iconColor} />
+          </XStack>
         ) : null}
-      </YStack>
+
+        <YStack gap="$0.5" flex={1}>
+          <Text
+            fontSize={20}
+            fontWeight="800"
+            color="$white"
+            textTransform="uppercase"
+            letterSpacing={0.5}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text fontSize={13} color="$textSecondary" fontWeight="500">
+              {subtitle}
+            </Text>
+          ) : null}
+        </YStack>
+      </XStack>
 
       {/* Avatar / Profile Button */}
-      <XStack
-        width={42}
-        height={42}
-        borderRadius="$pill"
-        borderWidth={1}
-        borderColor="$borderColor"
-        alignItems="center"
-        justifyContent="center"
-        backgroundColor="$cardBg"
-        onPress={onProfilePress}
-        pressStyle={{ opacity: 0.8 }}>
-        <Feather name="user" size={18} color={iconColor} />
-      </XStack>
+      {onProfilePress ? (
+        <XStack
+          width={42}
+          height={42}
+          borderRadius="$pill"
+          borderWidth={1}
+          borderColor="$borderColor"
+          alignItems="center"
+          justifyContent="center"
+          backgroundColor="$cardBg"
+          onPress={onProfilePress}
+          pressStyle={{ opacity: 0.8 }}>
+          <Feather name="user" size={18} color={iconColor} />
+        </XStack>
+      ) : null}
     </XStack>
   );
 };

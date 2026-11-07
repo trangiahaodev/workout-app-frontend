@@ -1,11 +1,11 @@
 import React from "react";
-import { TamaguiProvider, Theme } from "tamagui";
+import { TamaguiProvider } from "tamagui";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { Provider as ReduxProvider } from "react-redux";
 
 import tamaguiConfig from "./tamagui.config";
-import HomeScreen from "./src/screens/HomeScreen";
+import AppNavigator from "./src/navigation/AppNavigator";
 import { store } from "./src/store";
 
 export default function App() {
@@ -14,7 +14,7 @@ export default function App() {
       <TamaguiProvider config={tamaguiConfig} defaultTheme="dark">
         <SafeAreaProvider>
           <NavigationContainer>
-            <HomeScreen />
+            <AppNavigator />
           </NavigationContainer>
         </SafeAreaProvider>
       </TamaguiProvider>

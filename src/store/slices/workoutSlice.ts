@@ -1,32 +1,43 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { SetLog } from "../../types";
 
-interface SetLog {
-  setId: string;
-  reps: number;
-  weight: number;
-  completed: boolean;
-}
+export type { SetLog };
 
-interface WorkoutState {
+export interface WorkoutState {
   isActive: boolean;
   planId: string | null;
-  logs: Record<string, SetLog[]>;
+  sessionId: string | null; // Lưu _id (ObjectId) của WorkoutSession
+  logs: Record<string, SetLog[]>; // Key: exerciseId (_id của Exercise)
 }
 
 const initialState: WorkoutState = {
   isActive: false,
   planId: null,
+  sessionId: null,
   logs: {},
 };
+
+export type StartWorkoutPayload =
+  | string
+  | { planId?: string | null; sessionId: string };
 
 const workoutSlice = createSlice({
   name: "workout",
   initialState,
   reducers: {
-    startWorkout: (state, action: PayloadAction<string>) => {
+    startWorkout: (state, action: PayloadAction<StartWorkoutPayload>) => {
       state.isActive = true;
-      state.planId = action.payload;
+      if (typeof action.payload === "string") {
+        state.planId = action.payload;
+        state.sessionId = action.payload;
+      } else {
+        state.planId = action.payload.planId ?? null;
+        state.sessionId = action.payload.sessionId;
+      }
       state.logs = {};
+    },
+    setSessionId: (state, action: PayloadAction<string>) => {
+      state.sessionId = action.payload;
     },
     logSet: (
       state,
@@ -48,10 +59,12 @@ const workoutSlice = createSlice({
     finishWorkout: (state) => {
       state.isActive = false;
       state.planId = null;
+      state.sessionId = null;
       state.logs = {};
     },
   },
 });
 
-export const { startWorkout, logSet, finishWorkout } = workoutSlice.actions;
+export const { startWorkout, setSessionId, logSet, finishWorkout } =
+  workoutSlice.actions;
 export default workoutSlice.reducer;
