@@ -1,5 +1,5 @@
 // 1. PROFILE
-export type GoalType = "Tăng cơ" | "Giảm mỡ" | "Sức mạnh" | "Giữ dáng, giữ cân";
+export type GoalType = "Tăng cơ" | "Giảm mỡ" | "Sức mạnh" | "Bảo trì" | "Giữ dáng, giữ cân";
 export type LevelType = "Beginner" | "Intermediate" | "Advanced";
 
 export interface Profile {
@@ -12,7 +12,7 @@ export interface Profile {
   updatedAt?: string;
 }
 
-// Payload cho PUT /profiles (upsertProfile)
+// Payload cho POST /profiles (upsertProfile trên backend hiện tại)
 export interface UpsertProfilePayload {
   userId: string;
   goal: GoalType;

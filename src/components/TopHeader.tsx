@@ -41,6 +41,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             alignItems="center"
             justifyContent="center"
             backgroundColor="$cardBg"
+            accessibilityRole="button"
+            accessibilityLabel="Quay lại"
             onPress={onBack}
             pressStyle={{ opacity: 0.7 }}>
             <Feather name="arrow-left" size={20} color={iconColor} />
@@ -75,6 +77,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           alignItems="center"
           justifyContent="center"
           backgroundColor="$cardBg"
+          accessibilityRole="button"
+          accessibilityLabel="Mở hồ sơ tập luyện"
           onPress={onProfilePress}
           pressStyle={{ opacity: 0.8 }}>
           <Feather name="user" size={18} color={iconColor} />

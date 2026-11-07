@@ -58,6 +58,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         return (
           <YStack
             key={tab.id}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
             alignItems="center"
             gap="$1"
             onPress={() => handleTabPress(tab.id)}
