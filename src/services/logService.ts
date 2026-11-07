@@ -1,14 +1,19 @@
 import axiosClient from "../api/axiosClient";
-import { SetLog, WorkoutSession, WorkoutLog } from "../types";
+import { SessionStatus, SetLog, WorkoutSession, WorkoutLog } from "../types";
 
 export type WorkoutLogs = Record<string, SetLog[]>;
 
 // POST /sessions: tạo buổi tập mới
-export const createSession = (planId: string, name: string) =>
+export const createSession = (
+  planId: string,
+  name: string,
+  extra?: { status?: SessionStatus; completedDate?: string },
+) =>
   axiosClient.post<never, WorkoutSession>("/sessions", {
     planId,
     name,
     scheduledDate: new Date().toISOString(),
+    ...extra,
   });
 
 // POST /logs: mỗi lần gửi 1 bài tập
