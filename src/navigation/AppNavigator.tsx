@@ -4,6 +4,8 @@ import HomeScreen from "../screens/HomeScreen";
 import WorkoutSessionScreen from "../screens/WorkoutSessionScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import PlanScreen from "../screens/PlanScreen";
+import PlanDetailScreen from "../screens/PlanDetailScreen";
 import { ProfileProvider } from "../hooks/useProfile";
 import { RootStackParamList } from "./types";
 
@@ -25,6 +27,8 @@ export function AppNavigator() {
         />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Plan" component={PlanScreen} />
+        <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
       </Stack.Navigator>
     </ProfileProvider>
   );

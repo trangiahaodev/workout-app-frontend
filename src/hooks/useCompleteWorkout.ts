@@ -45,10 +45,11 @@ export function useCompleteWorkout(
       if (planId) {
         try {
           const name = `Buổi tập ${new Date().toLocaleDateString("vi-VN")}`;
-          const session = (await createSession(
-            planId,
-            name,
-          )) as unknown as WorkoutSession;
+          // Buổi tập được tạo ngay khi hoàn tất => đánh dấu completed + completedDate
+          const session = (await createSession(planId, name, {
+            status: "completed",
+            completedDate: new Date().toISOString(),
+          })) as unknown as WorkoutSession;
           if (session?._id) {
             targetSessionId = session._id;
           }
