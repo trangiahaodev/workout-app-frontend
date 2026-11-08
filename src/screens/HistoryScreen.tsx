@@ -139,7 +139,8 @@ export default function HistoryScreen({
 
   return (
     <YStack flex={1} backgroundColor="$background">
-      <TopHeader title="Lịch sử tập luyện" onBack={handleBack} />
+      <TopHeader title="Lịch sử tập luyện" onBack={handleBack}
+        onProfilePress={() => navigation.navigate("Profile")} />
       <ScrollView flex={1} padding="$4" showsVerticalScrollIndicator={false}>
         <BaseText
           fontSize={20}
@@ -243,7 +244,9 @@ export default function HistoryScreen({
         activeTabId="history"
         onTabChange={(tabId) => {
           if (tabId === "home") {
-            navigation.navigate("Home");
+            navigation.popTo("Home", { tab: "home" });
+          } else if (tabId === "plan") {
+            navigation.popTo("Home", { tab: "plan" });
           }
         }}
       />

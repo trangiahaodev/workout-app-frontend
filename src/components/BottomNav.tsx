@@ -11,8 +11,8 @@ export interface TabItem {
 
 const DEFAULT_TABS: TabItem[] = [
   { id: "home", icon: "home", label: "Home" },
-  { id: "plan", icon: "calendar", label: "Plan" },
-  { id: "history", icon: "clock", label: "History" },
+  { id: "plan", icon: "calendar", label: "Lịch tập" },
+  { id: "history", icon: "clock", label: "Nhật ký" },
 ];
 
 export interface BottomNavProps {
@@ -58,6 +58,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         return (
           <YStack
             key={tab.id}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
             alignItems="center"
             gap="$1"
             onPress={() => handleTabPress(tab.id)}

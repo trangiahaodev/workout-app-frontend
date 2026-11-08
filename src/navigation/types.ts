@@ -2,7 +2,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 
 export type RootStackParamList = {
-  Home: undefined;
+  Home: { tab?: "home" | "plan" } | undefined;
+  Profile: undefined;
   WorkoutSession:
     | {
         planId?: string;
@@ -16,6 +17,11 @@ export type RootStackParamList = {
       }
     | undefined;
 };
+
+export type ProfileScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Profile"
+>;
 
 export type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,

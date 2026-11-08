@@ -1,11 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { YStack, ScrollView } from "tamagui";
 import { StatusBar } from "expo-status-bar";
 import { useDispatch } from "react-redux";
-import { useNavigation } from "@react-navigation/native";
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { BaseText } from "../components/BaseText";
-import { BottomNav, TopHeader } from "../components";
-import { HomeScreenNavigationProp } from "../navigation/types";
+import { BottomNav, Card, PrimaryButton, TopHeader } from "../components";
+import { HomeScreenNavigationProp, RootStackParamList } from "../navigation/types";
+import { useProfile } from "../hooks/useProfile";
 import { TodaySessionSection } from "../components/home/TodaySessionSection";
 import { PlanSection } from "../components/home/PlanSection";
 import { ExerciseSection } from "../components/home/ExerciseSection";
@@ -45,6 +46,8 @@ export default function HomeScreen({
 }) {
   const dispatch = useDispatch();
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, "Home">>();
+  const { profile, loading: profileLoading, error: profileError, reload } = useProfile();
   const scroll = useRef<any>(null);
   const positions = useRef<Record<string, number>>({ home: 0 });
   const [activeTab, setActiveTab] = useState("home");
@@ -52,6 +55,16 @@ export default function HomeScreen({
   const [homeData, setHomeData] = useState<HomeData>(
     initialData ?? defaultHomeData,
   );
+
+  // Until the Plan module is integrated, the plan tab targets this section.
+  useFocusEffect(useCallback(() => {
+    const tab = route.params?.tab ?? "home";
+    setActiveTab(tab);
+    const frame = requestAnimationFrame(() => {
+      scroll.current?.scrollTo({ y: positions.current[tab] ?? 0, animated: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [route.params?.tab]));
 
   useEffect(() => {
     let isMounted = true;
@@ -116,16 +129,7 @@ export default function HomeScreen({
       <StatusBar style="light" />
       <TopHeader
         subtitle="Chào bạn, hôm nay cùng tiến bộ!"
-        onProfilePress={() =>
-          setDetail({
-            label: "HỒ SƠ TẬP LUYỆN",
-            title: homeData.profile.goal,
-            lines: [
-              `Trình độ: ${homeData.profile.level}`,
-              `Mục tiêu: ${homeData.profile.trainingDaysPerWeek} buổi / tuần`,
-            ],
-          })
-        }
+        onProfilePress={() => navigation.navigate("Profile")}
       />
 
       <ScrollView
@@ -149,7 +153,15 @@ export default function HomeScreen({
             .toUpperCase()}
         </BaseText>
 
-        <ProfileOverview profile={homeData.profile} />
+        {profile ? <ProfileOverview profile={profile} /> : (
+          <Card marginTop="$4" gap="$3">
+            <BaseText>{profileLoading ? "Đang tải hồ sơ…" : profileError ?? "Bạn chưa thiết lập hồ sơ tập luyện."}</BaseText>
+            {!profileLoading && (
+              <PrimaryButton title={profileError ? "Thử lại" : "Thiết lập hồ sơ"}
+                onPress={() => { if (profileError) void reload(); else navigation.navigate("Profile"); }} />
+            )}
+          </Card>
+        )}
 
         <SectionHeading title="Buổi tập hôm nay" />
         <TodaySessionSection
@@ -175,6 +187,9 @@ export default function HomeScreen({
         <YStack
           onLayout={(event) => {
             positions.current.plan = event.nativeEvent.layout.y;
+            if (route.params?.tab === "plan") {
+              scroll.current?.scrollTo({ y: positions.current.plan, animated: true });
+            }
           }}>
           <SectionHeading
             title="Chương trình của bạn"
@@ -250,6 +265,7 @@ export default function HomeScreen({
             return;
           }
           setActiveTab(tab);
+          navigation.setParams({ tab: tab === "plan" ? "plan" : "home" });
           scroll.current?.scrollTo({
             y: positions.current[tab] ?? 0,
             animated: true,

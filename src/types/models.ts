@@ -12,7 +12,7 @@ export interface Profile {
   updatedAt?: string;
 }
 
-// Payload cho PUT /profiles (upsertProfile)
+// Payload cho POST /profiles (upsertProfile trên backend hiện tại)
 export interface UpsertProfilePayload {
   userId: string;
   goal: GoalType;
