@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
 import { finishWorkout } from "../store/slices/workoutSlice";
-import { createSession, submitWorkoutLogs } from "../services/logService";
+import {
+  createSession,
+  submitWorkoutLogs,
+  ExerciseExtras,
+} from "../services/logService";
 import { WorkoutSession } from "../types";
 import { DEFAULT_SESSION_ID } from "../components/home/mockData";
 
@@ -23,7 +27,7 @@ export function useCompleteWorkout(
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const complete = async () => {
+  const complete = async (extras: ExerciseExtras = {}) => {
     if (submitting) return;
     setSubmitting(true);
     setError(null);
@@ -63,7 +67,7 @@ export function useCompleteWorkout(
       // Gửi logs nếu có bài tập đã hoàn thành
       if (Object.keys(doneLogs).length > 0) {
         try {
-          await submitWorkoutLogs(targetSessionId, doneLogs);
+          await submitWorkoutLogs(targetSessionId, doneLogs, extras);
         } catch (submitErr) {
           console.warn("Không thể lưu logs lên API:", submitErr);
         }

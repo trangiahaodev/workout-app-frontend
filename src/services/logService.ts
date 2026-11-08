@@ -17,6 +17,7 @@ export const submitExerciseLog = (
   exerciseId: string,
   sets: SetLog[],
   notes = "",
+  progressPhotoUrl = "",
 ) =>
   axiosClient.post<never, WorkoutLog>("/logs", {
     sessionId,
@@ -27,17 +28,30 @@ export const submitExerciseLog = (
       isCompleted: s.isCompleted,
     })),
     notes,
+    progressPhotoUrl,
   });
+
+export type ExerciseExtras = Record<
+  string,
+  { notes: string; progressPhotoUrl: string }
+>;
 
 // Gửi toàn bộ logs trong Redux (mỗi bài tập 1 request qua Promise.all)
 export const submitWorkoutLogs = async (
   sessionId: string,
   logs: WorkoutLogs,
+  extras: ExerciseExtras = {},
 ) => {
   const entries = Object.entries(logs).filter(([, sets]) => sets.length > 0);
   return Promise.all(
     entries.map(([exerciseId, sets]) =>
-      submitExerciseLog(sessionId, exerciseId, sets),
+      submitExerciseLog(
+        sessionId,
+        exerciseId,
+        sets,
+        extras[exerciseId]?.notes,
+        extras[exerciseId]?.progressPhotoUrl,
+      ),
     ),
   );
 };

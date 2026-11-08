@@ -17,6 +17,7 @@ import {
   DEFAULT_SESSION_ID,
 } from "../components/home/mockData";
 import { useCompleteWorkout } from "../hooks/useCompleteWorkout";
+import { ExerciseExtras } from "../services/logService";
 import {
   WorkoutSessionScreenNavigationProp,
   WorkoutSessionScreenRouteProp,
@@ -47,7 +48,6 @@ export default function WorkoutSessionScreen({
   const workoutState = useSelector((state: RootState) => state.workout);
   const { isActive, logs } = workoutState;
 
-  // Lấy planId & sessionId từ props -> route params -> Redux state -> 24-hex MongoDB fallback
   const planId =
     propPlanId ??
     route.params?.planId ??
@@ -63,6 +63,16 @@ export default function WorkoutSessionScreen({
   const [inputs, setInputs] = useState<
     Record<string, { kg: string; reps: string }>
   >({});
+  const [current, setCurrent] = useState(0);
+  const [restLength, setRestLength] = useState(60);
+  const [restLeft, setRestLeft] = useState(0);
+  const [extras, setExtras] = useState<ExerciseExtras>({});
+
+  useEffect(() => {
+    if (restLeft <= 0) return;
+    const timer = setTimeout(() => setRestLeft(restLeft - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [restLeft]);
 
   useEffect(() => {
     if (!isActive) {
@@ -140,7 +150,6 @@ export default function WorkoutSessionScreen({
 
   const toggleSet = (exId: string, setId: string) => {
     const { kg, reps } = getInput(exId, setId);
-    // Chuẩn hóa: sử dụng isCompleted khớp 100% với SetLog
     const done = getSet(exId, setId)?.isCompleted ?? false;
     if (!done && !Number(reps)) return;
     dispatch(
@@ -154,6 +163,23 @@ export default function WorkoutSessionScreen({
         },
       }),
     );
+    if (!done) {
+      setRestLeft(restLength);
+    }
+  };
+
+  const getExtra = (exId: string) =>
+    extras[exId] ?? { notes: "", progressPhotoUrl: "" };
+
+  const changeExtra = (
+    exId: string,
+    field: "notes" | "progressPhotoUrl",
+    value: string,
+  ) => {
+    setExtras((prev) => ({
+      ...prev,
+      [exId]: { ...getExtra(exId), [field]: value },
+    }));
   };
 
   const handleBack = () => {
@@ -177,7 +203,7 @@ export default function WorkoutSessionScreen({
 
   const handleComplete = async () => {
     try {
-      await complete();
+      await complete(extras);
     } catch {
       if (propOnComplete) {
         propOnComplete();
@@ -189,6 +215,8 @@ export default function WorkoutSessionScreen({
     .flat()
     .filter((s) => s.isCompleted).length;
   const totalSets = list.length * SETS.length;
+
+  const ex = list[current];
 
   const iconActiveColor = theme.white?.val ?? "#FFFFFF";
   const iconInactiveColor = theme.textSecondary?.val ?? "#8E8E93";
@@ -210,14 +238,50 @@ export default function WorkoutSessionScreen({
       </YStack>
 
       <ScrollView flex={1} padding="$4" showsVerticalScrollIndicator={false}>
-        {list.map((ex, index) => (
-          <Card key={ex._id} gap="$3" marginBottom="$3">
+        {restLeft > 0 && (
+          <Card gap="$2" marginBottom="$3" alignItems="center">
+            <BaseText fontSize={12} fontWeight="700" color="$textSecondary">
+              NGHỈ GIỮA SET
+            </BaseText>
+            <BaseText fontSize={40} fontWeight="800" color="$primary">
+              {restLeft}s
+            </BaseText>
+            <PrimaryButton
+              title="BỎ QUA"
+              backgroundColor="$surfaceBg"
+              onPress={() => setRestLeft(0)}
+            />
+          </Card>
+        )}
+
+        <XStack gap="$2" marginBottom="$3" alignItems="center">
+          <BaseText
+            flex={1}
+            fontSize={12}
+            fontWeight="700"
+            color="$textSecondary">
+            THỜI GIAN NGHỈ
+          </BaseText>
+          {[60, 90].map((sec) => (
+            <PrimaryButton
+              key={sec}
+              title={`${sec}s`}
+              width={70}
+              paddingVertical="$2"
+              backgroundColor={restLength === sec ? "$primary" : "$surfaceBg"}
+              onPress={() => setRestLength(sec)}
+            />
+          ))}
+        </XStack>
+
+        {ex && (
+          <Card gap="$3" marginBottom="$3">
             <YStack gap="$1">
               <BaseText
                 fontSize={12}
                 fontWeight="700"
                 color="$textSecondary">
-                BÀI {index + 1}
+                BÀI {current + 1}/{list.length}
               </BaseText>
               <BaseText
                 fontSize={20}
@@ -324,8 +388,64 @@ export default function WorkoutSessionScreen({
                 </XStack>
               );
             })}
+
+            <Input
+              height={80}
+              padding="$3"
+              fontSize={14}
+              color="$white"
+              placeholder="Ghi chú cho bài này..."
+              placeholderTextColor="$textSecondary"
+              backgroundColor="$surfaceBg"
+              borderWidth={1}
+              borderColor="$borderColor"
+              borderRadius="$3"
+              focusStyle={{ borderColor: "$primary" }}
+              multiline
+              textAlignVertical="top"
+              value={getExtra(ex._id).notes}
+              onChangeText={(text) => changeExtra(ex._id, "notes", text)}
+            />
+            <Input
+              height={44}
+              paddingHorizontal="$3"
+              fontSize={14}
+              color="$white"
+              placeholder="Link ảnh tiến trình (https://...)"
+              placeholderTextColor="$textSecondary"
+              backgroundColor="$surfaceBg"
+              borderWidth={1}
+              borderColor="$borderColor"
+              borderRadius="$3"
+              focusStyle={{ borderColor: "$primary" }}
+              autoCapitalize="none"
+              keyboardType="url"
+              value={getExtra(ex._id).progressPhotoUrl}
+              onChangeText={(text) =>
+                changeExtra(ex._id, "progressPhotoUrl", text)
+              }
+            />
           </Card>
-        ))}
+        )}
+
+        <XStack gap="$2" marginBottom="$3">
+          <PrimaryButton
+            flex={1}
+            width="auto"
+            title="BÀI TRƯỚC"
+            backgroundColor="$surfaceBg"
+            disabled={current === 0}
+            onPress={() => setCurrent(current - 1)}
+          />
+          <PrimaryButton
+            flex={1}
+            width="auto"
+            title="BÀI TIẾP"
+            backgroundColor="$surfaceBg"
+            disabled={current >= list.length - 1}
+            onPress={() => setCurrent(current + 1)}
+          />
+        </XStack>
 
         <PrimaryButton
           title={submitting ? "ĐANG LƯU KẾT QUẢ..." : "HOÀN THÀNH BUỔI TẬP"}
