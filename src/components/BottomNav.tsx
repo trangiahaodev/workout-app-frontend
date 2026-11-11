@@ -40,17 +40,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     }
   };
 
-  const activeColor = theme.primary.val;
-  const inactiveColor =
-    theme.textSecondary?.val ?? theme.colorMuted?.val ?? "#8E8E93";
+  const activeColor = theme.textPrimary?.val ?? "#111111";
+  const inactiveColor = theme.textSecondary?.val ?? "#8E8E93";
+  const accentColor = theme.accent?.val ?? "#FF5E00";
 
   return (
     <XStack
-      backgroundColor="$background"
+      backgroundColor="$backgroundStrong"
       borderTopWidth={1}
       borderColor="$borderColor"
-      paddingBottom={Math.max(insets.bottom, 16)}
-      paddingTop="$3"
+      paddingBottom={Math.max(insets.bottom, 14)}
+      paddingTop="$2.5"
       justifyContent="space-around"
       alignItems="center">
       {tabs.map((tab) => {
@@ -66,7 +66,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             onPress={() => handleTabPress(tab.id)}
             paddingVertical="$1"
             paddingHorizontal="$3"
-            pressStyle={{ opacity: 0.7 }}>
+            pressStyle={{ opacity: 0.7, scale: 0.95 }}>
             <Feather
               name={tab.icon}
               size={22}
@@ -75,9 +75,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <Text
               fontSize={11}
               fontWeight={isActive ? "700" : "500"}
-              color={isActive ? "$primary" : "$textSecondary"}>
+              color={isActive ? "$textPrimary" : "$textSecondary"}>
               {tab.label}
             </Text>
+            {isActive && (
+              <YStack
+                width={4}
+                height={4}
+                borderRadius="$pill"
+                backgroundColor={accentColor}
+                marginTop="$0.5"
+              />
+            )}
           </YStack>
         );
       })}

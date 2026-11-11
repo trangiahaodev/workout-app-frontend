@@ -104,11 +104,11 @@ export default function PlanDetailScreen() {
               label={PLAN_STATUS_LABEL[plan.status] ?? plan.status}
               color={PLAN_STATUS_COLOR[plan.status] ?? "#8E8E93"}
             />
-            <BaseText fontSize={11} fontWeight="700" color="$textSecondary">
-              {plan.generatedByAI ? "AI TẠO" : "TỰ TẠO"}
+            <BaseText fontSize={11} fontWeight="600" color="$textSecondary">
+              {plan.generatedByAI ? "AI tạo" : "Tự tạo"}
             </BaseText>
           </XStack>
-          <BaseText fontSize={22} fontWeight="800" color="$white">
+          <BaseText fontSize={22} fontWeight="800" color="$textPrimary" letterSpacing={-0.3}>
             {plan.name}
           </BaseText>
           <BaseText fontSize={13} color="$textSecondary">
@@ -129,42 +129,38 @@ export default function PlanDetailScreen() {
           {plan.status === "active" ? (
             <>
               <PrimaryButton
-                title="BẮT ĐẦU BUỔI TẬP"
+                title="Bắt đầu buổi tập"
                 disabled={busy}
                 onPress={handleStartWorkout}
               />
               <PrimaryButton
-                title="HOÀN THÀNH CHƯƠNG TRÌNH"
-                backgroundColor="$cardBg"
-                borderWidth={1}
-                borderColor="$borderColor"
+                title="Hoàn thành chương trình"
+                variant="secondary"
                 disabled={busy}
                 onPress={() => changeStatus("completed")}
               />
               <PrimaryButton
-                title="HỦY CHƯƠNG TRÌNH"
-                backgroundColor="$cardBg"
-                borderWidth={1}
-                borderColor="$borderColor"
+                title="Hủy chương trình"
+                variant="secondary"
                 disabled={busy}
                 onPress={() => changeStatus("abandoned")}
               />
             </>
           ) : (
             <PrimaryButton
-              title="KÍCH HOẠT CHƯƠNG TRÌNH"
+              title="Kích hoạt chương trình"
               disabled={busy}
               onPress={() => changeStatus("active")}
             />
           )}
         </YStack>
 
-        <BaseText fontSize={18} fontWeight="800" color="$white" marginBottom="$3">
+        <BaseText fontSize={18} fontWeight="800" color="$textPrimary" marginBottom="$3">
           Các buổi tập
         </BaseText>
 
         {loading ? (
-          <Spinner size="large" />
+          <Spinner size="large" color="$textPrimary" />
         ) : sessions.length === 0 ? (
           <Card>
             <BaseText color="$textSecondary">
@@ -179,7 +175,7 @@ export default function PlanDetailScreen() {
                   flex={1}
                   fontSize={16}
                   fontWeight="700"
-                  color="$white">
+                  color="$textPrimary">
                   {session.name}
                 </BaseText>
                 <StatusBadge

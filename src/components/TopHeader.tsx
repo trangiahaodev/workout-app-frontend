@@ -11,21 +11,21 @@ export interface TopHeaderProps {
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
-  title = "WORKOUT LOG",
+  title = "Workout Log",
   subtitle = "Chào buổi sáng, Hảo!",
   onProfilePress,
   onBack,
 }) => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const iconColor = theme.white?.val ?? theme.color?.val ?? "#FFFFFF";
+  const iconColor = theme.textPrimary?.val ?? theme.color?.val ?? "#111111";
 
   return (
     <XStack
-      paddingTop={insets.top + 10}
+      paddingTop={insets.top + 8}
       paddingBottom="$3.5"
       paddingHorizontal="$4"
-      backgroundColor="$background"
+      backgroundColor="$backgroundStrong"
       borderBottomWidth={1}
       borderColor="$borderColor"
       alignItems="center"
@@ -35,27 +35,26 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <XStack
             width={40}
             height={40}
-            borderRadius="$pill"
+            borderRadius={12}
             borderWidth={1}
             borderColor="$borderColor"
             alignItems="center"
             justifyContent="center"
-            backgroundColor="$cardBg"
+            backgroundColor="$surfaceSubtle"
             accessibilityRole="button"
             accessibilityLabel="Quay lại"
             onPress={onBack}
-            pressStyle={{ opacity: 0.7 }}>
+            pressStyle={{ opacity: 0.75, scale: 0.96 }}>
             <Feather name="arrow-left" size={20} color={iconColor} />
           </XStack>
         ) : null}
 
         <YStack gap="$0.5" flex={1}>
           <Text
-            fontSize={20}
+            fontSize={22}
             fontWeight="800"
-            color="$white"
-            textTransform="uppercase"
-            letterSpacing={0.5}>
+            color="$textPrimary"
+            letterSpacing={-0.4}>
             {title}
           </Text>
           {subtitle ? (
@@ -69,18 +68,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       {/* Avatar / Profile Button */}
       {onProfilePress ? (
         <XStack
-          width={42}
-          height={42}
-          borderRadius="$pill"
+          width={40}
+          height={40}
+          borderRadius={12}
           borderWidth={1}
           borderColor="$borderColor"
           alignItems="center"
           justifyContent="center"
-          backgroundColor="$cardBg"
+          backgroundColor="$surfaceSubtle"
           accessibilityRole="button"
           accessibilityLabel="Mở hồ sơ tập luyện"
           onPress={onProfilePress}
-          pressStyle={{ opacity: 0.8 }}>
+          pressStyle={{ opacity: 0.75, scale: 0.96 }}>
           <Feather name="user" size={18} color={iconColor} />
         </XStack>
       ) : null}

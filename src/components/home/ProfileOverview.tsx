@@ -7,8 +7,8 @@ import { ui } from "./homeUi";
 export function ProfileOverview({ profile }: { profile: Profile }) {
   return (
     <YStack {...ui.card} marginTop="$4">
-      <BaseText {...ui.label}>MỤC TIÊU CỦA BẠN</BaseText>
-      <BaseText {...ui.title} fontSize={28}>
+      <BaseText {...ui.label}>Mục tiêu của bạn</BaseText>
+      <BaseText {...ui.title} fontSize={26}>
         {profile.goal}
       </BaseText>
       <BaseText {...ui.body}>

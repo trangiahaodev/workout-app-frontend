@@ -28,7 +28,7 @@ export function HomeDetailModal({
       onRequestClose={onClose}>
       <YStack
         flex={1}
-        backgroundColor="rgba(0,0,0,0.75)"
+        backgroundColor="rgba(0,0,0,0.4)"
         justifyContent="center"
         padding="$4"
         paddingTop={insets.top + 20}
@@ -49,20 +49,19 @@ export function HomeDetailModal({
           width="100%"
           maxWidth={560}
           maxHeight="90%"
-          alignSelf="center"
-          borderColor="$primary">
+          alignSelf="center">
           <ScrollView contentContainerStyle={{ gap: 16 }}>
             <BaseText {...ui.label}>{detail?.label}</BaseText>
-            <BaseText accessibilityRole="header" {...ui.title}>
+            <BaseText accessibilityRole="header" {...ui.title} fontSize={22}>
               {detail?.title}
             </BaseText>
             {detail?.lines.map((line, index) => (
-              <BaseText key={index} {...ui.body}>
+              <BaseText key={index} {...ui.body} fontSize={14}>
                 {line}
               </BaseText>
             ))}
+            <Action title="Đóng" onPress={onClose} secondary />
           </ScrollView>
-          <Action title="Đóng" onPress={onClose} />
         </YStack>
       </YStack>
     </Modal>

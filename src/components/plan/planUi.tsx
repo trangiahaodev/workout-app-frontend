@@ -7,28 +7,28 @@ import { PlanStatus, SessionStatus, WorkoutPlan } from "../../types";
 export type PlanFilter = "all" | PlanStatus;
 
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
-  active: "ĐANG HOẠT ĐỘNG",
-  completed: "HOÀN THÀNH",
-  abandoned: "ĐÃ HỦY",
+  active: "Đang hoạt động",
+  completed: "Hoàn thành",
+  abandoned: "Đã hủy",
 };
 
-// Màu trạng thái (active dùng màu primary của Thenx, 2 màu còn lại là màu ngữ nghĩa)
+// Màu trạng thái chuẩn High-Contrast Minimalist
 export const PLAN_STATUS_COLOR: Record<PlanStatus, string> = {
-  active: "#1E90FF",
-  completed: "#32D74B",
-  abandoned: "#FF453A",
+  active: "#111111",
+  completed: "#10B981",
+  abandoned: "#EF4444",
 };
 
 export const SESSION_STATUS_LABEL: Record<SessionStatus, string> = {
-  pending: "CHƯA TẬP",
-  completed: "ĐÃ HOÀN THÀNH",
-  skipped: "BỎ QUA",
+  pending: "Chưa tập",
+  completed: "Đã hoàn thành",
+  skipped: "Bỏ qua",
 };
 
 export const SESSION_STATUS_COLOR: Record<SessionStatus, string> = {
   pending: "#8E8E93",
-  completed: "#32D74B",
-  skipped: "#FF9F0A",
+  completed: "#10B981",
+  skipped: "#F59E0B",
 };
 
 export function formatDateSafe(value?: string | null): string {
@@ -59,12 +59,12 @@ export function StatusBadge({
   return (
     <BaseText
       fontSize={11}
-      fontWeight="800"
-      letterSpacing={0.6}
+      fontWeight="700"
+      letterSpacing={0.2}
       color={color}
-      backgroundColor="$surfaceBg"
+      backgroundColor="$surfaceSubtle"
       borderWidth={1}
-      borderColor={color}
+      borderColor="$borderColor"
       paddingHorizontal={10}
       paddingVertical={4}
       borderRadius={8}
@@ -97,17 +97,17 @@ export function PlanFilterBar({
           <YStack
             key={item.id}
             onPress={() => onChange(item.id)}
-            paddingHorizontal="$3"
+            paddingHorizontal="$3.5"
             paddingVertical="$2"
-            borderRadius="$pill"
+            borderRadius={12}
             borderWidth={1}
             borderColor={selected ? "$primary" : "$borderColor"}
-            backgroundColor={selected ? "$primary" : "$cardBg"}
-            pressStyle={{ opacity: 0.8 }}>
+            backgroundColor={selected ? "$primary" : "$surfaceSubtle"}
+            pressStyle={{ opacity: 0.8, scale: 0.96 }}>
             <BaseText
               fontSize={13}
-              fontWeight="700"
-              color={selected ? "$white" : "$textSecondary"}>
+              fontWeight="600"
+              color={selected ? "$primaryContrast" : "$textSecondary"}>
               {item.label}
             </BaseText>
           </YStack>
@@ -129,17 +129,17 @@ export function PlanCard({
       onPress={onPress}
       gap="$2"
       marginBottom="$3"
-      pressStyle={{ opacity: 0.9 }}>
+      pressStyle={{ opacity: 0.9, scale: 0.985 }}>
       <XStack justifyContent="space-between" alignItems="center">
         <StatusBadge
           label={PLAN_STATUS_LABEL[plan.status] ?? plan.status}
           color={PLAN_STATUS_COLOR[plan.status] ?? "#8E8E93"}
         />
-        <BaseText fontSize={11} fontWeight="700" color="$textSecondary">
-          {plan.generatedByAI ? "AI TẠO" : "TỰ TẠO"}
+        <BaseText fontSize={11} fontWeight="600" color="$textSecondary">
+          {plan.generatedByAI ? "AI tạo" : "Tự tạo"}
         </BaseText>
       </XStack>
-      <BaseText fontSize={20} fontWeight="800" color="$white">
+      <BaseText fontSize={20} fontWeight="800" color="$textPrimary" letterSpacing={-0.3}>
         {plan.name}
       </BaseText>
       <BaseText fontSize={13} color="$textSecondary">

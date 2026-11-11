@@ -150,3 +150,29 @@ export interface SessionSummary {
   completedSetsCount: number;
   exercisesCount: number;
 }
+
+export interface MuscleDistribution {
+  muscleGroup: MuscleGroup | string;
+  totalVolumeKg: number;
+  setsCount: number;
+  percentage: number;
+}
+
+export interface VolumeHistoryPoint {
+  sessionId: string;
+  sessionName: string;
+  date: string;
+  totalVolumeKg: number;
+  completedSetsCount: number;
+}
+
+export interface ProgressAnalyticsData {
+  totalVolumeKg: number;
+  completedSessionsCount: number;
+  totalSessionsCount: number;
+  completionRate: number; // 0 - 100
+  weeklyFrequency: number;
+  muscleDistribution: MuscleDistribution[];
+  volumeHistory: VolumeHistoryPoint[];
+  dominantMuscleGroup?: string;
+}

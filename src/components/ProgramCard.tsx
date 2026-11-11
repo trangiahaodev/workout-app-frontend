@@ -5,27 +5,34 @@ import { Feather } from "@expo/vector-icons";
 const CardContainer = styled(YStack, {
   name: "ProgramCardContainer",
   backgroundColor: "$cardBg",
-  borderRadius: "$4",
+  borderRadius: 14,
   overflow: "hidden",
-  height: 200,
+  height: 190,
   marginBottom: "$4",
   justifyContent: "space-between",
   padding: "$4",
   position: "relative",
   borderWidth: 1,
   borderColor: "$borderColor",
+  shadowColor: "#000000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.04,
+  shadowRadius: 12,
+  elevation: 2,
   pressStyle: {
-    opacity: 0.9,
-    scale: 0.99,
+    opacity: 0.88,
+    scale: 0.985,
   },
 });
 
 const Badge = styled(XStack, {
   name: "ProgramCardBadge",
-  backgroundColor: "$badgeBg",
+  backgroundColor: "$surfaceSubtle",
   paddingHorizontal: "$2.5",
   paddingVertical: "$1",
-  borderRadius: "$pill",
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "$borderColor",
   alignSelf: "flex-start",
   alignItems: "center",
   justifyContent: "center",
@@ -33,28 +40,27 @@ const Badge = styled(XStack, {
 
 const BadgeText = styled(Text, {
   name: "ProgramCardBadgeText",
-  color: "$white",
+  color: "$textPrimary",
   fontSize: 11,
   fontWeight: "700",
-  textTransform: "uppercase",
-  letterSpacing: 0.6,
+  letterSpacing: 0.2,
 });
 
 const SubtitleText = styled(Text, {
   name: "ProgramCardSubtitle",
   color: "$textSecondary",
   fontSize: 12,
-  textTransform: "uppercase",
   fontWeight: "600",
-  letterSpacing: 0.5,
+  letterSpacing: 0.2,
   marginBottom: "$1",
 });
 
 const TitleText = styled(Text, {
   name: "ProgramCardTitle",
-  color: "$white",
-  fontSize: 22,
+  color: "$textPrimary",
+  fontSize: 21,
   fontWeight: "800",
+  letterSpacing: -0.4,
 });
 
 const MetricsContainer = styled(XStack, {
@@ -71,7 +77,7 @@ const MetricItem = styled(XStack, {
 
 const MetricText = styled(Text, {
   name: "ProgramCardMetricText",
-  color: "$white",
+  color: "$textSecondary",
   fontSize: 12,
   fontWeight: "600",
 });
@@ -88,18 +94,21 @@ export interface ProgramCardProps {
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({
   title,
-  subtitle = "THENX PROGRAM",
-  level = "BEGINNER",
+  subtitle = "Thenx Program",
+  level = "Người mới",
   likes = "11K",
   views = "25K",
   onPress,
   hideMetrics = false,
 }) => {
   const theme = useTheme();
-  const iconColor = theme.white?.val ?? "#FFFFFF";
+  const iconColor = theme.textSecondary?.val ?? "#6E6E73";
 
   return (
-    <CardContainer onPress={onPress} accessibilityRole="button" accessibilityLabel={`Xem chương trình ${title}`}>
+    <CardContainer
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Xem chương trình ${title}`}>
       {/* Top-left Pill Badge */}
       <Badge>
         <BadgeText>{level}</BadgeText>
@@ -113,20 +122,22 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         </YStack>
 
         {/* Bottom-right Metrics */}
-        {!hideMetrics && <MetricsContainer>
-          {likes !== undefined && (
-            <MetricItem>
-              <Feather name="heart" size={14} color={iconColor} />
-              <MetricText>{likes}</MetricText>
-            </MetricItem>
-          )}
-          {views !== undefined && (
-            <MetricItem>
-              <Feather name="eye" size={14} color={iconColor} />
-              <MetricText>{views}</MetricText>
-            </MetricItem>
-          )}
-        </MetricsContainer>}
+        {!hideMetrics && (
+          <MetricsContainer>
+            {likes !== undefined && (
+              <MetricItem>
+                <Feather name="heart" size={14} color={iconColor} />
+                <MetricText>{likes}</MetricText>
+              </MetricItem>
+            )}
+            {views !== undefined && (
+              <MetricItem>
+                <Feather name="eye" size={14} color={iconColor} />
+                <MetricText>{views}</MetricText>
+              </MetricItem>
+            )}
+          </MetricsContainer>
+        )}
       </XStack>
     </CardContainer>
   );

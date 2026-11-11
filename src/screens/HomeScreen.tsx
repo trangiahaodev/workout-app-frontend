@@ -126,7 +126,7 @@ export default function HomeScreen({
 
   return (
     <YStack flex={1} backgroundColor="$background">
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <TopHeader
         subtitle="Chào bạn, hôm nay cùng tiến bộ!"
         onProfilePress={() => navigation.navigate("Profile")}
@@ -143,14 +143,12 @@ export default function HomeScreen({
           alignSelf: "center",
         }}>
         <BaseText {...ui.label} marginTop="$5">
-          {now
-            .toLocaleDateString("vi-VN", {
-              weekday: "long",
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })
-            .toUpperCase()}
+          {now.toLocaleDateString("vi-VN", {
+            weekday: "long",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })}
         </BaseText>
 
         {profile ? <ProfileOverview profile={profile} /> : (
@@ -170,7 +168,7 @@ export default function HomeScreen({
           onStartSession={handleStartWorkout}
           onSessionPress={(session) =>
             setDetail({
-              label: "LỊCH TẬP",
+              label: "Lịch tập",
               title: session.name,
               lines: [
                 `Ngày tập: ${formatDate(session.scheduledDate)}`,
@@ -193,7 +191,6 @@ export default function HomeScreen({
           }}>
           <SectionHeading
             title="Chương trình của bạn"
-            count={homeData.plans.length}
           />
           <PlanSection
             plans={homeData.plans}
@@ -204,8 +201,8 @@ export default function HomeScreen({
               );
               setDetail({
                 label: plan.generatedByAI
-                  ? "CHƯƠNG TRÌNH AI"
-                  : "CHƯƠNG TRÌNH TỰ TẠO",
+                  ? "Chương trình AI"
+                  : "Chương trình tự tạo",
                 title: plan.name,
                 lines: sessions.length
                   ? sessions.map(
@@ -220,13 +217,12 @@ export default function HomeScreen({
 
         <SectionHeading
           title="Thư viện bài tập"
-          count={homeData.exercises.length}
         />
         <ExerciseSection
           exercises={homeData.exercises}
           onExercisePress={(exercise) =>
             setDetail({
-              label: "THƯ VIỆN BÀI TẬP",
+              label: "Thư viện bài tập",
               title: exercise.name,
               lines: [
                 `Nhóm cơ: ${exercise.muscleGroup}`,
@@ -245,7 +241,6 @@ export default function HomeScreen({
           }}>
           <SectionHeading
             title="Nhật ký gần đây"
-            count={homeData.logs.length}
           />
           <RecentLogsSection logs={homeData.logs} />
         </YStack>

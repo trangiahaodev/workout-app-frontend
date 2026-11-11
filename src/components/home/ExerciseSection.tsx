@@ -36,15 +36,18 @@ export function ExerciseSection({
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               onPress={() => setGroup(item)}
-              pressStyle={{ opacity: 0.7 }}
-              minHeight={44}
+              pressStyle={{ opacity: 0.75, scale: 0.96 }}
+              minHeight={40}
               justifyContent="center"
-              paddingHorizontal="$4"
-              borderRadius="$full"
+              paddingHorizontal="$3.5"
+              borderRadius={12}
               borderWidth={1}
               borderColor={isSelected ? "$primary" : "$borderColor"}
-              backgroundColor={isSelected ? "$primary" : "$cardBg"}>
-              <BaseText color="$white" fontWeight="600">
+              backgroundColor={isSelected ? "$primary" : "$surfaceSubtle"}>
+              <BaseText
+                color={isSelected ? "$primaryContrast" : "$textPrimary"}
+                fontWeight="600"
+                fontSize={13}>
                 {item ?? "Tất cả"}
               </BaseText>
             </YStack>
@@ -55,7 +58,7 @@ export function ExerciseSection({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 12, paddingBottom: 4 }}>
+        contentContainerStyle={{ gap: 12, paddingBottom: 6 }}>
         {visible.map((ex) => (
           <YStack
             key={ex._id}
@@ -63,26 +66,28 @@ export function ExerciseSection({
             accessibilityLabel={`Xem bài tập ${ex.name}`}
             onPress={() => onExercisePress(ex)}
             {...ui.card}
-            width={186}
+            width={190}
             justifyContent="space-between"
-            pressStyle={{ opacity: 0.7 }}>
+            pressStyle={{ opacity: 0.8, scale: 0.98 }}>
             <XStack justifyContent="space-between" alignItems="center">
               <Icon
                 name={
                   ex.equipmentRequired === "Bodyweight" ? "user" : "target"
                 }
               />
-              <BaseText {...ui.badge}>{ex.muscleGroup}</BaseText>
+              <BaseText {...ui.badge} fontSize={11}>
+                {ex.muscleGroup}
+              </BaseText>
             </XStack>
-            <BaseText {...ui.title} fontSize={17} numberOfLines={2}>
+            <BaseText {...ui.title} fontSize={16} numberOfLines={2}>
               {ex.name}
             </BaseText>
-            <BaseText {...ui.body} numberOfLines={1}>
+            <BaseText {...ui.body} fontSize={13} numberOfLines={1}>
               {ex.equipmentRequired === "Bodyweight"
                 ? "Trọng lượng cơ thể"
                 : ex.equipmentRequired}
             </BaseText>
-            <BaseText color="$primary" fontWeight="600">
+            <BaseText color="$textPrimary" fontWeight="700" fontSize={13}>
               Xem chi tiết →
             </BaseText>
           </YStack>

@@ -112,32 +112,32 @@ export default function PlanScreen() {
         <YStack marginTop="$4">
           {showForm ? (
             <Card gap="$3">
-              <BaseText fontSize={13} fontWeight="700" color="$textSecondary">
-                TÊN CHƯƠNG TRÌNH
+              <BaseText fontSize={13} fontWeight="600" color="$textSecondary">
+                Tên chương trình
               </BaseText>
               <Input
                 height={44}
                 paddingHorizontal="$3"
-                fontSize={16}
-                color="$white"
+                fontSize={15}
+                color="$textPrimary"
                 placeholder="VD: Calisthenics 4 tuần"
-                placeholderTextColor="$textSecondary"
-                backgroundColor="$surfaceBg"
+                placeholderTextColor="$textTertiary"
+                backgroundColor="$surfaceSubtle"
                 borderWidth={1}
                 borderColor="$borderColor"
-                borderRadius="$3"
+                borderRadius={12}
                 focusStyle={{ borderColor: "$primary" }}
                 value={name}
                 onChangeText={setName}
               />
               <PrimaryButton
-                title={creating ? "ĐANG TẠO..." : "TẠO VÀ KÍCH HOẠT"}
+                title={creating ? "Đang tạo..." : "Tạo và kích hoạt"}
                 disabled={creating}
                 onPress={handleCreate}
               />
               <PrimaryButton
-                title="HỦY"
-                backgroundColor="$surfaceBg"
+                title="Hủy"
+                variant="secondary"
                 disabled={creating}
                 onPress={() => {
                   setShowForm(false);
@@ -148,7 +148,7 @@ export default function PlanScreen() {
             </Card>
           ) : (
             <PrimaryButton
-              title="+ TẠO CHƯƠNG TRÌNH MỚI"
+              title="+ Tạo chương trình mới"
               onPress={() => setShowForm(true)}
             />
           )}

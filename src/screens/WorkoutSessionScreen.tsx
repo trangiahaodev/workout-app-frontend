@@ -218,8 +218,8 @@ export default function WorkoutSessionScreen({
 
   const ex = list[current];
 
-  const iconActiveColor = theme.white?.val ?? "#FFFFFF";
-  const iconInactiveColor = theme.textSecondary?.val ?? "#8E8E93";
+  const iconActiveColor = "#FFFFFF";
+  const iconInactiveColor = theme.textSecondary?.val ?? "#6E6E73";
 
   return (
     <YStack flex={1} backgroundColor="$background">
@@ -233,22 +233,22 @@ export default function WorkoutSessionScreen({
         <YStack
           height={4}
           width={`${totalSets ? (doneCount / totalSets) * 100 : 0}%`}
-          backgroundColor="$primary"
+          backgroundColor="$accent"
         />
       </YStack>
 
       <ScrollView flex={1} padding="$4" showsVerticalScrollIndicator={false}>
         {restLeft > 0 && (
           <Card gap="$2" marginBottom="$3" alignItems="center">
-            <BaseText fontSize={12} fontWeight="700" color="$textSecondary">
-              NGHỈ GIỮA SET
+            <BaseText fontSize={12} fontWeight="600" color="$textSecondary">
+              Nghỉ giữa hiệp
             </BaseText>
-            <BaseText fontSize={40} fontWeight="800" color="$primary">
+            <BaseText fontSize={44} fontWeight="800" color="$accent">
               {restLeft}s
             </BaseText>
             <PrimaryButton
-              title="BỎ QUA"
-              backgroundColor="$surfaceBg"
+              title="Bỏ qua"
+              variant="secondary"
               onPress={() => setRestLeft(0)}
             />
           </Card>
@@ -258,17 +258,17 @@ export default function WorkoutSessionScreen({
           <BaseText
             flex={1}
             fontSize={12}
-            fontWeight="700"
+            fontWeight="600"
             color="$textSecondary">
-            THỜI GIAN NGHỈ
+            Thời gian nghỉ
           </BaseText>
           {[60, 90].map((sec) => (
             <PrimaryButton
               key={sec}
               title={`${sec}s`}
               width={70}
-              paddingVertical="$2"
-              backgroundColor={restLength === sec ? "$primary" : "$surfaceBg"}
+              size="sm"
+              variant={restLength === sec ? "primary" : "secondary"}
               onPress={() => setRestLength(sec)}
             />
           ))}
@@ -279,15 +279,15 @@ export default function WorkoutSessionScreen({
             <YStack gap="$1">
               <BaseText
                 fontSize={12}
-                fontWeight="700"
+                fontWeight="600"
                 color="$textSecondary">
-                BÀI {current + 1}/{list.length}
+                Bài {current + 1}/{list.length}
               </BaseText>
               <BaseText
-                fontSize={20}
+                fontSize={22}
                 fontWeight="800"
-                color="$white"
-                textTransform="uppercase">
+                color="$textPrimary"
+                letterSpacing={-0.4}>
                 {ex.name}
               </BaseText>
             </YStack>
@@ -296,25 +296,25 @@ export default function WorkoutSessionScreen({
               <BaseText
                 width={28}
                 fontSize={12}
-                fontWeight="700"
+                fontWeight="600"
                 color="$textSecondary">
-                SET
+                Hiệp
               </BaseText>
               <BaseText
                 flex={1}
                 fontSize={12}
-                fontWeight="700"
+                fontWeight="600"
                 color="$textSecondary"
                 textAlign="center">
-                KG
+                Kg
               </BaseText>
               <BaseText
                 flex={1}
                 fontSize={12}
-                fontWeight="700"
+                fontWeight="600"
                 color="$textSecondary"
                 textAlign="center">
-                REPS
+                Reps
               </BaseText>
               <YStack width={40} />
             </XStack>
@@ -327,17 +327,19 @@ export default function WorkoutSessionScreen({
                   key={setId}
                   gap="$2"
                   padding="$2"
-                  borderRadius="$3"
+                  borderRadius={12}
                   alignItems="center"
-                  backgroundColor={done ? "$badgeBg" : "transparent"}>
+                  backgroundColor={done ? "$surfaceSubtle" : "transparent"}>
                   <YStack
                     width={28}
                     height={28}
-                    borderRadius="$pill"
-                    backgroundColor="$surfaceBg"
+                    borderRadius={14}
+                    backgroundColor="$surfaceSubtle"
+                    borderWidth={1}
+                    borderColor="$borderColor"
                     alignItems="center"
                     justifyContent="center">
-                    <BaseText fontWeight="800" color="$white">
+                    <BaseText fontWeight="700" fontSize={13} color="$textPrimary">
                       {i + 1}
                     </BaseText>
                   </YStack>
@@ -351,13 +353,13 @@ export default function WorkoutSessionScreen({
                       fontSize={16}
                       fontWeight="700"
                       textAlign="center"
-                      color="$white"
+                      color="$textPrimary"
                       placeholder="0"
-                      placeholderTextColor="$textSecondary"
-                      backgroundColor="$surfaceBg"
+                      placeholderTextColor="$textTertiary"
+                      backgroundColor="$surfaceSubtle"
                       borderWidth={1}
                       borderColor="$borderColor"
-                      borderRadius="$3"
+                      borderRadius={12}
                       focusStyle={{ borderColor: "$primary" }}
                       keyboardType="numeric"
                       maxLength={field === "kg" ? 5 : 3}
@@ -371,10 +373,10 @@ export default function WorkoutSessionScreen({
                   <YStack
                     width={40}
                     height={44}
-                    borderRadius="$3"
+                    borderRadius={12}
                     alignItems="center"
                     justifyContent="center"
-                    backgroundColor={done ? "$primary" : "$surfaceBg"}
+                    backgroundColor={done ? "$primary" : "$surfaceSubtle"}
                     borderWidth={1}
                     borderColor={done ? "$primary" : "$borderColor"}
                     pressStyle={{ opacity: 0.8, scale: 0.95 }}
@@ -393,13 +395,13 @@ export default function WorkoutSessionScreen({
               height={80}
               padding="$3"
               fontSize={14}
-              color="$white"
+              color="$textPrimary"
               placeholder="Ghi chú cho bài này..."
-              placeholderTextColor="$textSecondary"
-              backgroundColor="$surfaceBg"
+              placeholderTextColor="$textTertiary"
+              backgroundColor="$surfaceSubtle"
               borderWidth={1}
               borderColor="$borderColor"
-              borderRadius="$3"
+              borderRadius={12}
               focusStyle={{ borderColor: "$primary" }}
               multiline
               textAlignVertical="top"
@@ -410,13 +412,13 @@ export default function WorkoutSessionScreen({
               height={44}
               paddingHorizontal="$3"
               fontSize={14}
-              color="$white"
+              color="$textPrimary"
               placeholder="Link ảnh tiến trình (https://...)"
-              placeholderTextColor="$textSecondary"
-              backgroundColor="$surfaceBg"
+              placeholderTextColor="$textTertiary"
+              backgroundColor="$surfaceSubtle"
               borderWidth={1}
               borderColor="$borderColor"
-              borderRadius="$3"
+              borderRadius={12}
               focusStyle={{ borderColor: "$primary" }}
               autoCapitalize="none"
               keyboardType="url"
@@ -432,23 +434,25 @@ export default function WorkoutSessionScreen({
           <PrimaryButton
             flex={1}
             width="auto"
-            title="BÀI TRƯỚC"
-            backgroundColor="$surfaceBg"
+            title="Bài trước"
+            variant="secondary"
             disabled={current === 0}
             onPress={() => setCurrent(current - 1)}
           />
           <PrimaryButton
             flex={1}
             width="auto"
-            title="BÀI TIẾP"
-            backgroundColor="$surfaceBg"
+            title="Bài tiếp"
+            variant="secondary"
             disabled={current >= list.length - 1}
             onPress={() => setCurrent(current + 1)}
           />
         </XStack>
 
         <PrimaryButton
-          title={submitting ? "ĐANG LƯU KẾT QUẢ..." : "HOÀN THÀNH BUỔI TẬP"}
+          title={submitting ? "Đang lưu kết quả..." : "Hoàn thành buổi tập"}
+          size="lg"
+          variant="primary"
           marginBottom="$8"
           disabled={doneCount === 0 || submitting}
           onPress={handleComplete}

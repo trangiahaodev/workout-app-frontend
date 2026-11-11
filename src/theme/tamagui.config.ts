@@ -8,34 +8,47 @@ const systemFont = createFont({
   }),
   size: { 1: 11, 2: 12, 3: 13, 4: 14, 5: 16, 6: 18, 7: 20, 8: 22, 9: 28, 10: 32, true: 16 },
   lineHeight: { 1: 15, 2: 16, 3: 18, 4: 20, 5: 22, 6: 24, 7: 26, 8: 28, 9: 34, 10: 38, true: 22 },
-  weight: { 4: "400", 6: "600", 7: "700", 8: "800" },
+  weight: { 4: "400", 5: "500", 6: "600", 7: "700", 8: "800" },
   letterSpacing: { 4: 0 },
 });
 
-// 1. Define Tokens matching Thenx Design System Specs
+// 1. Define Tokens matching Nike Athletic Minimalist System Specs
 const tokens = createTokens({
   color: {
-    // Backgrounds
-    black: "#000000",
-    darkBg: "#0A0A0A",
-    cardDark: "#1C1C1E",
-    surfaceDark: "#111111",
-    badgeBg: "#111111",
+    // Canvas & Layer Surfaces
+    offWhite: "#FAFAFA",
+    pureWhite: "#FFFFFF",
+    surfaceSubtle: "#F5F5F7",
+    borderSubtle: "#E5E5E5",
+    borderLight: "#E5E5E5",
 
-    // Primary Action
-    electricBlue: "#1E90FF",
-    primary: "#1E90FF",
+    // Obsidian Black & Neutrals
+    obsidian: "#111111",
+    black: "#111111",
+    trueBlack: "#000000",
+    textMuted: "#6E6E73",
+    textSecondary: "#6E6E73",
+    textTertiary: "#A1A1A6",
+    gray: "#6E6E73",
 
-    // Text & Accents
+    // Athletic Punch Accent (Nike Orange)
+    accent: "#FF5E00",
+    accentMuted: "rgba(255, 94, 0, 0.12)",
+
+    // Primary Action (High Contrast)
+    primary: "#111111",
+    primaryContrast: "#FFFFFF",
+    electricBlue: "#FF5E00", // mapped to accent for backward compatibility
+
+    // Legacy / Dark Fallbacks
+    darkBg: "#000000",
+    cardDark: "#141416",
+    surfaceDark: "#101012",
+    badgeBg: "#F5F5F7",
+    borderDark: "#262628",
     white: "#FFFFFF",
-    textMuted: "#8E8E93",
-    gray: "#8E8E93",
-    borderDark: "#2C2C2E",
-
-    // Light Fallbacks (if needed)
-    lightBg: "#F2F2F7",
+    lightBg: "#FAFAFA",
     cardLight: "#FFFFFF",
-    borderLight: "#E5E5EA",
   },
   space: {
     0: 0,
@@ -51,6 +64,8 @@ const tokens = createTokens({
     6: 24,
     7: 28,
     8: 32,
+    9: 40,
+    10: 48,
     true: 16,
   },
   size: {
@@ -58,6 +73,7 @@ const tokens = createTokens({
     1: 4,
     2: 8,
     3: 12,
+    3.5: 14,
     4: 16,
     5: 20,
     6: 24,
@@ -72,12 +88,17 @@ const tokens = createTokens({
     1: 4,
     2: 8,
     3: 12,
+    3.5: 14,
     4: 16,
     5: 20,
     6: 24,
+    sm: 8,
+    md: 12,
+    lg: 14,
+    xl: 16,
     pill: 9999,
     full: 9999,
-    true: 12,
+    true: 14,
   },
   zIndex: {
     0: 0,
@@ -87,33 +108,68 @@ const tokens = createTokens({
   },
 });
 
-// 2. Define Themes
+// 2. Define Modern Themes (Nike Athletic Minimalist default)
 const themes = {
+  light_nike: {
+    background: tokens.color.offWhite,
+    backgroundStrong: tokens.color.pureWhite,
+    color: tokens.color.obsidian,
+    colorMuted: tokens.color.textMuted,
+    primary: tokens.color.obsidian,
+    primaryContrast: tokens.color.pureWhite,
+    cardBg: tokens.color.pureWhite,
+    surface: tokens.color.pureWhite,
+    surfaceBg: tokens.color.pureWhite,
+    surfaceSubtle: tokens.color.surfaceSubtle,
+    badgeBg: tokens.color.surfaceSubtle,
+    borderColor: tokens.color.borderSubtle,
+    border: tokens.color.borderSubtle,
+    textPrimary: tokens.color.obsidian,
+    textSecondary: tokens.color.textSecondary,
+    textTertiary: tokens.color.textTertiary,
+    accent: tokens.color.accent,
+    white: tokens.color.pureWhite,
+    gray: tokens.color.gray,
+  },
+  light: {
+    background: tokens.color.offWhite,
+    backgroundStrong: tokens.color.pureWhite,
+    color: tokens.color.obsidian,
+    colorMuted: tokens.color.textMuted,
+    primary: tokens.color.obsidian,
+    primaryContrast: tokens.color.pureWhite,
+    cardBg: tokens.color.pureWhite,
+    surface: tokens.color.pureWhite,
+    surfaceBg: tokens.color.pureWhite,
+    surfaceSubtle: tokens.color.surfaceSubtle,
+    badgeBg: tokens.color.surfaceSubtle,
+    borderColor: tokens.color.borderSubtle,
+    border: tokens.color.borderSubtle,
+    textPrimary: tokens.color.obsidian,
+    textSecondary: tokens.color.textSecondary,
+    textTertiary: tokens.color.textTertiary,
+    accent: tokens.color.accent,
+    white: tokens.color.pureWhite,
+    gray: tokens.color.gray,
+  },
   dark: {
     background: tokens.color.darkBg,
     backgroundStrong: tokens.color.black,
     color: tokens.color.white,
     colorMuted: tokens.color.textMuted,
-    primary: tokens.color.electricBlue,
+    primary: tokens.color.pureWhite,
+    primaryContrast: tokens.color.obsidian,
     cardBg: tokens.color.cardDark,
+    surface: tokens.color.surfaceDark,
     surfaceBg: tokens.color.surfaceDark,
+    surfaceSubtle: tokens.color.badgeBg,
     badgeBg: tokens.color.badgeBg,
     borderColor: tokens.color.borderDark,
-    textSecondary: tokens.color.textMuted,
-    white: tokens.color.white,
-    gray: tokens.color.gray,
-  },
-  light: {
-    background: tokens.color.lightBg,
-    backgroundStrong: tokens.color.white,
-    color: tokens.color.black,
-    colorMuted: tokens.color.textMuted,
-    primary: tokens.color.electricBlue,
-    cardBg: tokens.color.cardLight,
-    surfaceBg: tokens.color.white,
-    badgeBg: tokens.color.surfaceDark,
-    borderColor: tokens.color.borderLight,
-    textSecondary: tokens.color.textMuted,
+    border: tokens.color.borderDark,
+    textPrimary: tokens.color.white,
+    textSecondary: tokens.color.textSecondary,
+    textTertiary: tokens.color.textTertiary,
+    accent: tokens.color.accent,
     white: tokens.color.white,
     gray: tokens.color.gray,
   },
@@ -129,7 +185,7 @@ const appConfig = createTamagui({
   settings: {
     defaultFont: "body",
   },
-  defaultTheme: "dark",
+  defaultTheme: "light_nike",
 });
 
 export type AppConfig = typeof appConfig;

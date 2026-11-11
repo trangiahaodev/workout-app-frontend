@@ -15,6 +15,7 @@ export type RootStackParamList = {
     | {
         planId?: string;
         sessionId?: string;
+        tab?: "history" | "analytics";
       }
     | undefined;
   Plan: undefined;

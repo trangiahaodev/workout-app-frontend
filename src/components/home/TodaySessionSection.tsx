@@ -43,10 +43,8 @@ export function TodaySessionSection({
         today.map((session) => (
           <YStack
             key={session._id}
-            {...ui.card}
-            borderColor="$primary"
-            backgroundColor="$surfaceBg">
-            <BaseText {...ui.label}>SẴN SÀNG CHO BUỔI TẬP</BaseText>
+            {...ui.card}>
+            <BaseText {...ui.label}>Sẵn sàng cho buổi tập</BaseText>
             <XStack alignItems="center" gap="$3">
               <Icon name="activity" />
               <BaseText {...ui.title}>{session.name}</BaseText>
@@ -58,14 +56,14 @@ export function TodaySessionSection({
               {onStartSession && (
                 <YStack flex={1}>
                   <Action
-                    title="Bắt Đầu Tập Ngay"
+                    title="Bắt đầu tập ngay"
                     onPress={() => onStartSession(session)}
                   />
                 </YStack>
               )}
-              <YStack flex={onStartSession ? 0.8 : 1}>
+              <YStack flex={onStartSession ? 0.75 : 1}>
                 <Action
-                  title="Chi Tiết"
+                  title="Chi tiết"
                   secondary={Boolean(onStartSession)}
                   onPress={() => onSessionPress(session)}
                 />
@@ -75,9 +73,7 @@ export function TodaySessionSection({
         ))
       ) : (
         <YStack
-          {...ui.card}
-          backgroundColor="$surfaceBg"
-          borderColor="$borderColor">
+          {...ui.card}>
           <Icon name="coffee" />
           <BaseText {...ui.title}>Hôm nay là ngày phục hồi</BaseText>
           <BaseText {...ui.body}>
@@ -86,7 +82,7 @@ export function TodaySessionSection({
           {next ? (
             <>
               <BaseText {...ui.badge}>
-                TIẾP THEO · {formatDate(next.scheduledDate)}
+                Tiếp theo · {formatDate(next.scheduledDate)}
               </BaseText>
               <BaseText {...ui.title}>{next.name}</BaseText>
               <Action

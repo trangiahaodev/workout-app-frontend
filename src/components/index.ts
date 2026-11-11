@@ -4,3 +4,4 @@ export * from "./PrimaryButton";
 export * from "./ProgramCard";
 export * from "./TopHeader";
 export * from "./BottomNav";
+export * from "./analytics";

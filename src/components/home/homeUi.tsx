@@ -10,7 +10,7 @@ export const colors = {
   border: "$borderColor",
   muted: "$textSecondary",
   primary: "$primary",
-  text: "$white",
+  text: "$textPrimary",
 } as const;
 
 export const ui = {
@@ -18,44 +18,50 @@ export const ui = {
     backgroundColor: "$cardBg" as const,
     borderWidth: 1,
     borderColor: "$borderColor" as const,
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 14,
+    padding: 16,
     gap: 12,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
   title: {
-    color: "$white" as const,
-    fontSize: 20,
+    color: "$textPrimary" as const,
+    fontSize: 18,
     fontWeight: "800" as const,
+    letterSpacing: -0.3,
     flexShrink: 1,
   },
   body: {
     color: "$textSecondary" as const,
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   label: {
-    color: "$primary" as const,
-    fontSize: 11,
-    fontWeight: "800" as const,
-    letterSpacing: 1.4,
+    color: "$textSecondary" as const,
+    fontSize: 12,
+    fontWeight: "600" as const,
+    letterSpacing: 0.2,
   },
   badge: {
-    color: "$primary" as const,
+    color: "$textPrimary" as const,
     fontSize: 12,
-    fontWeight: "700" as const,
-    backgroundColor: "$surfaceBg" as const,
+    fontWeight: "600" as const,
+    backgroundColor: "$surfaceSubtle" as const,
     borderWidth: 1,
     borderColor: "$borderColor" as const,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
     alignSelf: "flex-start" as const,
   },
   icon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "$surfaceBg" as const,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "$surfaceSubtle" as const,
     borderWidth: 1,
     borderColor: "$borderColor" as const,
     justifyContent: "center" as const,
@@ -77,14 +83,15 @@ export function Action({
       title={title}
       onPress={onPress}
       accessibilityRole="button"
-      backgroundColor={secondary ? "$cardBg" : "$primary"}
+      variant={secondary ? "secondary" : "primary"}
+      size="md"
     />
   );
 }
 
 export function SectionHeading({
   title,
-  count,
+  count: _count,
 }: {
   title: string;
   count?: number;
@@ -95,10 +102,9 @@ export function SectionHeading({
       alignItems="center"
       marginTop="$5"
       marginBottom="$3">
-      <BaseText accessibilityRole="header" {...ui.title} fontSize={18}>
+      <BaseText accessibilityRole="header" {...ui.title} fontSize={19}>
         {title}
       </BaseText>
-      {count !== undefined && <BaseText {...ui.badge}>{count}</BaseText>}
     </XStack>
   );
 }
@@ -113,10 +119,10 @@ export function EmptyState({ text }: { text: string }) {
 
 export function Icon({ name }: { name: keyof typeof Feather.glyphMap }) {
   const theme = useTheme();
-  const iconColor = theme.primary?.val ?? "#1E90FF";
+  const iconColor = theme.textPrimary?.val ?? "#111111";
   return (
     <YStack {...ui.icon}>
-      <Feather name={name} color={iconColor} size={22} />
+      <Feather name={name} color={iconColor} size={20} />
     </YStack>
   );
 }

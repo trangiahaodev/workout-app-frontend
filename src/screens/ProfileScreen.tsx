@@ -27,11 +27,12 @@ function Choice<T extends string | number>({ value, selected, label, disabled, o
       accessibilityRole="radio"
       accessibilityState={{ checked: selected, disabled }}
       disabled={disabled}
-      backgroundColor={selected ? "$primary" : "$cardBg"}
+      backgroundColor={selected ? "$primary" : "$surfaceSubtle"}
       borderColor={selected ? "$primary" : "$borderColor"}
       borderWidth={1}
-      color="$white"
+      color={selected ? "$primaryContrast" : "$textPrimary"}
       minHeight={44}
+      borderRadius={12}
       onPress={() => onSelect(value)}>
       {label}
     </Button>
