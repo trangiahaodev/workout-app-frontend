@@ -4,10 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { RootState } from "../store";
-import {
-  startWorkout,
-  logSet,
-} from "../store/slices/workoutSlice";
+import { startWorkout, logSet } from "../store/slices/workoutSlice";
 import axiosClient from "../api/axiosClient";
 import { Card, BaseText, PrimaryButton, TopHeader } from "../components";
 import { Exercise } from "../types";
@@ -118,8 +115,7 @@ export default function WorkoutSessionScreen({
   }, [isActive, dispatch, planId, sessionId, list.length]);
 
   const getSet = useCallback(
-    (exId: string, setId: string) =>
-      logs[exId]?.find((s) => s.setId === setId),
+    (exId: string, setId: string) => logs[exId]?.find((s) => s.setId === setId),
     [logs],
   );
 
@@ -220,6 +216,7 @@ export default function WorkoutSessionScreen({
 
   const iconActiveColor = "#FFFFFF";
   const iconInactiveColor = theme.textSecondary?.val ?? "#6E6E73";
+  const primaryColor = theme.primary?.val ?? "#EA580C";
 
   return (
     <YStack flex={1} backgroundColor="$background">
@@ -276,21 +273,42 @@ export default function WorkoutSessionScreen({
 
         {ex && (
           <Card gap="$3" marginBottom="$3">
-            <YStack gap="$1">
-              <BaseText
-                fontSize={12}
-                fontWeight="600"
-                color="$textSecondary">
-                Bài {current + 1}/{list.length}
-              </BaseText>
-              <BaseText
-                fontSize={22}
-                fontWeight="800"
-                color="$textPrimary"
-                letterSpacing={-0.4}>
-                {ex.name}
-              </BaseText>
-            </YStack>
+            <XStack
+              alignItems="flex-start"
+              justifyContent="space-between"
+              gap="$2">
+              <YStack flex={1} gap="$1">
+                <BaseText fontSize={12} fontWeight="600" color="$textSecondary">
+                  Bài {current + 1}/{list.length}
+                </BaseText>
+                <BaseText
+                  fontSize={22}
+                  fontWeight="800"
+                  color="$textPrimary"
+                  letterSpacing={-0.4}>
+                  {ex.name}
+                </BaseText>
+              </YStack>
+
+              <YStack
+                width={36}
+                height={36}
+                borderRadius={18}
+                backgroundColor="$surfaceSubtle"
+                borderWidth={1}
+                borderColor="$borderColor"
+                alignItems="center"
+                justifyContent="center"
+                pressStyle={{ opacity: 0.75, scale: 0.95 }}
+                onPress={() =>
+                  navigation.navigate("ExerciseDetail", {
+                    exerciseId: ex._id,
+                    exercise: ex,
+                  })
+                }>
+                <Feather name="info" size={18} color={primaryColor} />
+              </YStack>
+            </XStack>
 
             <XStack gap="$2" paddingHorizontal="$2">
               <BaseText
@@ -339,7 +357,10 @@ export default function WorkoutSessionScreen({
                     borderColor="$borderColor"
                     alignItems="center"
                     justifyContent="center">
-                    <BaseText fontWeight="700" fontSize={13} color="$textPrimary">
+                    <BaseText
+                      fontWeight="700"
+                      fontSize={13}
+                      color="$textPrimary">
                       {i + 1}
                     </BaseText>
                   </YStack>

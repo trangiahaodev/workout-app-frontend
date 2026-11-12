@@ -1,5 +1,11 @@
 import axiosClient from "../api/axiosClient";
-import { SessionStatus, SetLog, WorkoutSession, WorkoutLog } from "../types";
+import {
+  SessionStatus,
+  SetLog,
+  WorkoutSession,
+  WorkoutLog,
+  ExerciseHistoryLog,
+} from "../types";
 
 export type WorkoutLogs = Record<string, SetLog[]>;
 
@@ -68,3 +74,9 @@ export const getSessionsByPlan = (planId: string) =>
 // GET /logs/session/{sessionId}
 export const getLogsBySession = (sessionId: string) =>
   axiosClient.get<never, WorkoutLog[]>(`/logs/session/${sessionId}`);
+
+export const getLogsByExercise = async (
+  exerciseId: string,
+): Promise<ExerciseHistoryLog[]> => {
+  return await axiosClient.get(`/logs/exercise/${exerciseId}`);
+};

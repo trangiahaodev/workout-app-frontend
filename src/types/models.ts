@@ -46,8 +46,22 @@ export interface Exercise {
   muscleGroup: MuscleGroup | string;
   equipmentRequired?: EquipmentType | string;
   description?: string;
+  images?: string[];
+  instructions?: string[];
+  recommendedSetsReps?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface ExerciseHistoryLog extends Omit<WorkoutLog, "sessionId"> {
+  sessionId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        completedDate?: string;
+        scheduledDate?: string;
+      };
 }
 
 // Khi backend dùng .populate("exerciseId", "name muscleGroup")

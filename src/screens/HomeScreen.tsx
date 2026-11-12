@@ -2,10 +2,18 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { YStack, ScrollView } from "tamagui";
 import { StatusBar } from "expo-status-bar";
 import { useDispatch } from "react-redux";
-import { RouteProp, useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  RouteProp,
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { BaseText } from "../components/BaseText";
 import { BottomNav, Card, PrimaryButton, TopHeader } from "../components";
-import { HomeScreenNavigationProp, RootStackParamList } from "../navigation/types";
+import {
+  HomeScreenNavigationProp,
+  RootStackParamList,
+} from "../navigation/types";
 import { useProfile } from "../hooks/useProfile";
 import { TodaySessionSection } from "../components/home/TodaySessionSection";
 import { PlanSection } from "../components/home/PlanSection";
@@ -47,7 +55,12 @@ export default function HomeScreen({
   const dispatch = useDispatch();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, "Home">>();
-  const { profile, loading: profileLoading, error: profileError, reload } = useProfile();
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+    reload,
+  } = useProfile();
   const scroll = useRef<any>(null);
   const positions = useRef<Record<string, number>>({ home: 0 });
   const [activeTab, setActiveTab] = useState("home");
@@ -57,14 +70,19 @@ export default function HomeScreen({
   );
 
   // Until the Plan module is integrated, the plan tab targets this section.
-  useFocusEffect(useCallback(() => {
-    const tab = route.params?.tab ?? "home";
-    setActiveTab(tab);
-    const frame = requestAnimationFrame(() => {
-      scroll.current?.scrollTo({ y: positions.current[tab] ?? 0, animated: true });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [route.params?.tab]));
+  useFocusEffect(
+    useCallback(() => {
+      const tab = route.params?.tab ?? "home";
+      setActiveTab(tab);
+      const frame = requestAnimationFrame(() => {
+        scroll.current?.scrollTo({
+          y: positions.current[tab] ?? 0,
+          animated: true,
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    }, [route.params?.tab]),
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -107,7 +125,6 @@ export default function HomeScreen({
   }, []);
 
   const handleStartWorkout = (session: Session) => {
-    // Redux Handoff chuẩn bị dữ liệu cho màn hình SessionScreen của Trung
     dispatch(
       startWorkout({
         planId: session.planId,
@@ -151,12 +168,23 @@ export default function HomeScreen({
           })}
         </BaseText>
 
-        {profile ? <ProfileOverview profile={profile} /> : (
+        {profile ? (
+          <ProfileOverview profile={profile} />
+        ) : (
           <Card marginTop="$4" gap="$3">
-            <BaseText>{profileLoading ? "Đang tải hồ sơ…" : profileError ?? "Bạn chưa thiết lập hồ sơ tập luyện."}</BaseText>
+            <BaseText>
+              {profileLoading
+                ? "Đang tải hồ sơ…"
+                : (profileError ?? "Bạn chưa thiết lập hồ sơ tập luyện.")}
+            </BaseText>
             {!profileLoading && (
-              <PrimaryButton title={profileError ? "Thử lại" : "Thiết lập hồ sơ"}
-                onPress={() => { if (profileError) void reload(); else navigation.navigate("Profile"); }} />
+              <PrimaryButton
+                title={profileError ? "Thử lại" : "Thiết lập hồ sơ"}
+                onPress={() => {
+                  if (profileError) void reload();
+                  else navigation.navigate("Profile");
+                }}
+              />
             )}
           </Card>
         )}
@@ -186,12 +214,13 @@ export default function HomeScreen({
           onLayout={(event) => {
             positions.current.plan = event.nativeEvent.layout.y;
             if (route.params?.tab === "plan") {
-              scroll.current?.scrollTo({ y: positions.current.plan, animated: true });
+              scroll.current?.scrollTo({
+                y: positions.current.plan,
+                animated: true,
+              });
             }
           }}>
-          <SectionHeading
-            title="Chương trình của bạn"
-          />
+          <SectionHeading title="Chương trình của bạn" />
           <PlanSection
             plans={homeData.plans}
             sessions={homeData.sessions}
@@ -215,22 +244,13 @@ export default function HomeScreen({
           />
         </YStack>
 
-        <SectionHeading
-          title="Thư viện bài tập"
-        />
+        <SectionHeading title="Thư viện bài tập" />
         <ExerciseSection
           exercises={homeData.exercises}
           onExercisePress={(exercise) =>
-            setDetail({
-              label: "Thư viện bài tập",
-              title: exercise.name,
-              lines: [
-                `Nhóm cơ: ${exercise.muscleGroup}`,
-                `Dụng cụ: ${exercise.equipmentRequired}`,
-                exercise.description
-                  ? `Mô tả: ${exercise.description}`
-                  : "Hướng dẫn kỹ thuật đang được cập nhật.",
-              ],
+            navigation.navigate("ExerciseDetail", {
+              exerciseId: exercise._id,
+              exercise,
             })
           }
         />
@@ -239,9 +259,7 @@ export default function HomeScreen({
           onLayout={(event) => {
             positions.current.history = event.nativeEvent.layout.y;
           }}>
-          <SectionHeading
-            title="Nhật ký gần đây"
-          />
+          <SectionHeading title="Nhật ký gần đây" />
           <RecentLogsSection logs={homeData.logs} />
         </YStack>
       </ScrollView>
