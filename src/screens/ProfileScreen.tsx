@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Alert, Platform } from "react-native";
 import { CommonActions, NavigationAction, StackActions, useNavigation, usePreventRemove } from "@react-navigation/native";
 import { Button, ScrollView, Spinner, XStack, YStack } from "tamagui";
 import { BaseText, BottomNav, Card, PrimaryButton, TopHeader } from "../components";
-import { DEMO_USER_ID } from "../config/demoUser";
+import { useAuth } from "../hooks/useAuth";
 import { useProfile } from "../hooks/useProfile";
 import { ProfileScreenNavigationProp } from "../navigation/types";
 import { profileErrorMessage } from "../services/profileService";
@@ -39,11 +40,47 @@ function Choice<T extends string | number>({ value, selected, label, disabled, o
   );
 }
 
+function LogoutButton({ disabled = false }: { disabled?: boolean }) {
+  const { signOut } = useAuth();
+  const [busy, setBusy] = useState(false);
+
+  async function doLogout() {
+    setBusy(true);
+    try {
+      // AuthGate tự chuyển về màn Đăng nhập sau khi xoá token.
+      await signOut();
+    } catch {
+      setBusy(false);
+    }
+  }
+
+  function confirmLogout() {
+    const title = "Đăng xuất";
+    const body = "Bạn có chắc muốn đăng xuất khỏi tài khoản này?";
+    if (Platform.OS === "web") {
+      if (globalThis.confirm?.(body) ?? true) void doLogout();
+      return;
+    }
+    Alert.alert(title, body, [
+      { text: "Huỷ", style: "cancel" },
+      { text: "Đăng xuất", style: "destructive", onPress: () => { void doLogout(); } },
+    ]);
+  }
+
+  return (
+    <PrimaryButton title="Đăng xuất" variant="secondary" loading={busy}
+      accessibilityRole="button" disabled={disabled || busy}
+      onPress={confirmLogout} />
+  );
+}
+
 function ProfileForm({ profile }: { profile: Profile | null }) {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const { save } = useProfile();
+  const { userId: authUserId } = useAuth();
+  const userId = authUserId ?? "";
   const [draft, setDraft] = useState<UpsertProfilePayload>(() => ({
-    userId: DEMO_USER_ID,
+    userId,
     goal: profile?.goal ?? "Tăng cơ",
     level: profile?.level ?? "Beginner",
     trainingDaysPerWeek: profile?.trainingDaysPerWeek ?? 3,
@@ -123,7 +160,7 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
               <BaseText color="$textSecondary">Bạn muốn tiếp tục chỉnh sửa hay bỏ thay đổi để rời màn hình?</BaseText>
               <Button onPress={() => setPendingAction(null)}>Tiếp tục chỉnh sửa</Button>
               <Button onPress={() => {
-                setDraft({ userId: DEMO_USER_ID, goal: profile?.goal ?? "Tăng cơ",
+                setDraft({ userId, goal: profile?.goal ?? "Tăng cơ",
                   level: profile?.level ?? "Beginner", trainingDaysPerWeek: profile?.trainingDaysPerWeek ?? 3 });
                 setEdited(false);
                 setDiscardAction(pendingAction);
@@ -176,6 +213,7 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
           <PrimaryButton title={saving ? "Đang lưu hồ sơ…" : profile ? "Lưu thay đổi" : "Tạo hồ sơ"}
             accessibilityRole="button" disabled={saving || (!!profile && !dirty)}
             onPress={handleSave} />
+          <LogoutButton disabled={saving} />
         </YStack>
       </ScrollView>
       <BottomNav activeTabId="profile"
@@ -212,6 +250,7 @@ export default function ProfileScreen() {
         <YStack padding="$4" gap="$3">
           <BaseText accessibilityRole="alert">{error}</BaseText>
           <PrimaryButton title="Thử lại" onPress={() => { void reload(); }} />
+          <LogoutButton />
         </YStack>
       ) : <ProfileForm profile={profile} />}
     </YStack>
