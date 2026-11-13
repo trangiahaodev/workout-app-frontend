@@ -7,9 +7,10 @@ import { RootState } from "../store";
 import { startWorkout, logSet } from "../store/slices/workoutSlice";
 import axiosClient from "../api/axiosClient";
 import { Card, BaseText, PrimaryButton, TopHeader } from "../components";
-import { Exercise } from "../types";
+import { Exercise, WorkoutSession } from "../types";
 import {
   mockExercises,
+  mockSessions,
   DEFAULT_PLAN_ID,
   DEFAULT_SESSION_ID,
 } from "../components/home/mockData";
@@ -29,6 +30,75 @@ interface Props {
 }
 
 const SETS = ["set_1", "set_2", "set_3"];
+
+function unwrapList<T>(res: unknown): T[] {
+  if (Array.isArray(res)) return res as T[];
+  if (
+    res &&
+    typeof res === "object" &&
+    "data" in res &&
+    Array.isArray((res as { data: unknown }).data)
+  ) {
+    return (res as { data: T[] }).data;
+  }
+  return [];
+}
+
+function resolveSessionExercises(
+  session: WorkoutSession | undefined,
+  allExercises: Exercise[],
+): Exercise[] {
+  // 1. Ưu tiên lấy đúng theo danh sách exercises gắn trong WorkoutSession
+  if (session?.exercises && session.exercises.length > 0) {
+    const resolved = session.exercises
+      .map((item) => {
+        if (typeof item === "string") {
+          return allExercises.find((ex) => ex._id === item);
+        }
+        return item;
+      })
+      .filter((ex): ex is Exercise => Boolean(ex));
+
+    if (resolved.length > 0) return resolved;
+  }
+
+  // 2. Fallback thông minh theo tên buổi tập nếu session chưa có mảng exercises
+  const name = (session?.name ?? "").toLowerCase();
+  if (
+    name.includes("lower") ||
+    name.includes("hamstring") ||
+    name.includes("squat")
+  ) {
+    const legs = allExercises.filter(
+      (ex) =>
+        ex.muscleGroup === "Chân" || ex._id === "6abc93738a6b7b585e251503",
+    );
+    if (legs.length > 0) return legs.slice(0, 4);
+  }
+  if (name.includes("pull") || name.includes("deadlift")) {
+    const pull = allExercises.filter(
+      (ex) => ex.muscleGroup === "Lưng" || ex.muscleGroup === "Tay trước",
+    );
+    if (pull.length > 0) return pull.slice(0, 4);
+  }
+  if (name.includes("push")) {
+    const push = allExercises.filter(
+      (ex) =>
+        ex.muscleGroup === "Ngực" ||
+        ex.muscleGroup === "Vai" ||
+        ex.muscleGroup === "Tay sau",
+    );
+    if (push.length > 0) return push.slice(0, 4);
+  }
+  if (name.includes("upper")) {
+    const upper = allExercises.filter((ex) =>
+      ["Ngực", "Lưng", "Vai"].includes(ex.muscleGroup),
+    );
+    if (upper.length > 0) return upper.slice(0, 4);
+  }
+
+  return allExercises.slice(0, 3);
+}
 
 export default function WorkoutSessionScreen({
   planId: propPlanId,
@@ -57,6 +127,7 @@ export default function WorkoutSessionScreen({
     DEFAULT_SESSION_ID;
 
   const [list, setList] = useState<Exercise[]>(propExercises);
+  const [sessionTitle, setSessionTitle] = useState<string>("Đang tập");
   const [inputs, setInputs] = useState<
     Record<string, { kg: string; reps: string }>
   >({});
@@ -78,33 +149,40 @@ export default function WorkoutSessionScreen({
 
     if (list.length === 0) {
       let isMounted = true;
-      axiosClient
-        .get("/exercises")
-        .then((res: unknown) => {
-          let exercisesArray: Exercise[] = [];
-          if (Array.isArray(res)) {
-            exercisesArray = res as Exercise[];
-          } else if (
-            res &&
-            typeof res === "object" &&
-            "data" in res &&
-            Array.isArray((res as { data: unknown }).data)
-          ) {
-            exercisesArray = (res as { data: Exercise[] }).data;
-          }
+      Promise.all([
+        axiosClient.get("/exercises").catch(() => null),
+        axiosClient.get(`/sessions/plan/${planId}`).catch(() => null),
+      ])
+        .then(([exRes, sessionsRes]) => {
+          const fetchedExercises = unwrapList<Exercise>(exRes);
+          const fetchedSessions = unwrapList<WorkoutSession>(sessionsRes);
+
+          const allExercises =
+            fetchedExercises.length > 0 ? fetchedExercises : mockExercises;
+          const allSessions =
+            fetchedSessions.length > 0 ? fetchedSessions : mockSessions;
+
+          const activeSession =
+            allSessions.find((s) => s._id === sessionId) ??
+            mockSessions.find((s) => s._id === sessionId);
 
           if (isMounted) {
-            if (exercisesArray.length > 0) {
-              setList(exercisesArray.slice(0, 3));
-            } else {
-              setList(mockExercises.slice(0, 3));
+            if (activeSession?.name) {
+              setSessionTitle(activeSession.name);
             }
+            setList(resolveSessionExercises(activeSession, allExercises));
           }
         })
         .catch((err) => {
           console.error("Lỗi lấy bài tập, sử dụng mock fallback:", err);
           if (isMounted) {
-            setList(mockExercises.slice(0, 3));
+            const fallbackSession = mockSessions.find(
+              (s) => s._id === sessionId,
+            );
+            if (fallbackSession?.name) {
+              setSessionTitle(fallbackSession.name);
+            }
+            setList(resolveSessionExercises(fallbackSession, mockExercises));
           }
         });
 
@@ -221,7 +299,7 @@ export default function WorkoutSessionScreen({
   return (
     <YStack flex={1} backgroundColor="$background">
       <TopHeader
-        title="Đang tập"
+        title={sessionTitle}
         subtitle={`${doneCount}/${totalSets} set hoàn thành`}
         onBack={handleBack}
       />

@@ -78,6 +78,8 @@ export interface WorkoutPlan {
   _id: string;
   profileId: string;
   name: string;
+  goal?: GoalType;
+  coverImage?: string;
   generatedByAI: boolean;
   status: PlanStatus;
   startDate?: string;
@@ -90,6 +92,8 @@ export interface WorkoutPlan {
 export interface CreatePlanPayload {
   profileId: string;
   name: string;
+  goal?: GoalType;
+  coverImage?: string;
   generatedByAI?: boolean;
   status?: PlanStatus;
   startDate?: string;
@@ -108,6 +112,7 @@ export interface WorkoutSession {
   _id: string;
   planId: string;
   name: string;
+  exercises?: (string | Exercise)[];
   scheduledDate: string;
   completedDate?: string | null;
   status: SessionStatus;

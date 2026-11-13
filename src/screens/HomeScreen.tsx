@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { YStack, ScrollView } from "tamagui";
 import { StatusBar } from "expo-status-bar";
 import { useDispatch } from "react-redux";
@@ -35,7 +41,7 @@ import {
 } from "../components/home/mockData";
 import { startWorkout } from "../store/slices/workoutSlice";
 import axiosClient from "../api/axiosClient";
-import { Exercise } from "../types";
+import { Exercise, GoalType, WorkoutPlan, WorkoutSession } from "../types";
 
 const defaultHomeData: HomeData = {
   profile: mockProfile,
@@ -44,6 +50,27 @@ const defaultHomeData: HomeData = {
   exercises: mockExercises,
   logs: MOCK_LOGS,
 };
+
+function unwrapArray<T>(res: unknown): T[] | null {
+  if (Array.isArray(res)) return res as T[];
+  if (
+    res &&
+    typeof res === "object" &&
+    "data" in res &&
+    Array.isArray((res as { data: unknown }).data)
+  ) {
+    return (res as { data: T[] }).data;
+  }
+  return null;
+}
+
+function isSameLocalDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
 
 export default function HomeScreen({
   data: initialData,
@@ -61,6 +88,9 @@ export default function HomeScreen({
     error: profileError,
     reload,
   } = useProfile();
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+
   const scroll = useRef<any>(null);
   const positions = useRef<Record<string, number>>({ home: 0 });
   const [activeTab, setActiveTab] = useState("home");
@@ -69,9 +99,11 @@ export default function HomeScreen({
     initialData ?? defaultHomeData,
   );
 
-  // Until the Plan module is integrated, the plan tab targets this section.
+  // Làm mới profile (để cập nhật mục tiêu nếu user vừa sửa ở ProfileScreen) & cuộn đúng tab
   useFocusEffect(
     useCallback(() => {
+      void reloadRef.current();
+
       const tab = route.params?.tab ?? "home";
       setActiveTab(tab);
       const frame = requestAnimationFrame(() => {
@@ -89,31 +121,35 @@ export default function HomeScreen({
 
     async function loadData() {
       try {
-        // Gọi API backend với fallback an toàn
-        // axiosClient đã unwrap response.data ở response interceptor
-        const res: unknown = await axiosClient.get("/exercises");
-        // Kiểm tra an toàn: API trả về mảng trực tiếp hoặc { data: [...] }
-        let fetchedExercises: Exercise[] | null = null;
-        if (Array.isArray(res)) {
-          fetchedExercises = res as Exercise[];
-        } else if (
-          res &&
-          typeof res === "object" &&
-          "data" in res &&
-          Array.isArray((res as { data: unknown }).data)
-        ) {
-          fetchedExercises = (res as { data: Exercise[] }).data;
-        }
+        const [exRes, plansRes, sessionsRes] = await Promise.all([
+          axiosClient.get("/exercises").catch(() => null),
+          axiosClient.get("/plans").catch(() => null),
+          axiosClient.get("/sessions").catch(() => null),
+        ]);
 
-        if (isMounted && fetchedExercises && fetchedExercises.length > 0) {
+        const fetchedExercises = unwrapArray<Exercise>(exRes);
+        const fetchedPlans = unwrapArray<WorkoutPlan>(plansRes);
+        const fetchedSessions = unwrapArray<WorkoutSession>(sessionsRes);
+
+        if (isMounted) {
           setHomeData((prev) => ({
             ...prev,
-            exercises: fetchedExercises!,
+            exercises:
+              fetchedExercises && fetchedExercises.length > 0
+                ? fetchedExercises
+                : prev.exercises,
+            plans:
+              fetchedPlans && fetchedPlans.length > 0
+                ? fetchedPlans
+                : prev.plans,
+            sessions:
+              fetchedSessions && fetchedSessions.length > 0
+                ? fetchedSessions
+                : prev.sessions,
           }));
         }
       } catch (err) {
-        // Fallback an toàn về mockData khi offline hoặc lỗi API
-        console.log("Using local mock exercises fallback:", err);
+        console.log("Using local mock fallback:", err);
       }
     }
 
@@ -124,6 +160,38 @@ export default function HomeScreen({
     };
   }, []);
 
+  // Lọc tối đa 3 chương trình tập tương ứng với mục tiêu trong hồ sơ của user
+  const userPlans = useMemo<WorkoutPlan[]>(() => {
+    const activeGoal: GoalType = profile?.goal || "Tăng cơ";
+    const matched = homeData.plans.filter((p) => p.goal === activeGoal);
+    return matched.length > 0
+      ? matched.slice(0, 3)
+      : homeData.plans.slice(0, 3);
+  }, [homeData.plans, profile?.goal]);
+
+  // Lọc các buổi tập thuộc 3 chương trình trên & neo buổi pending đầu tiên vào hôm nay
+  const userSessions = useMemo<WorkoutSession[]>(() => {
+    const planIds = new Set(userPlans.map((p) => p._id));
+    const filtered = homeData.sessions.filter((s) => planIds.has(s.planId));
+
+    const hasTodaySession = filtered.some(
+      (s) =>
+        s.status === "pending" &&
+        isSameLocalDay(new Date(s.scheduledDate), now),
+    );
+
+    if (hasTodaySession) return filtered;
+
+    let promoted = false;
+    return filtered.map((s) => {
+      if (!promoted && s.status === "pending") {
+        promoted = true;
+        return { ...s, scheduledDate: now.toISOString() };
+      }
+      return s;
+    });
+  }, [homeData.sessions, userPlans, now]);
+
   const handleStartWorkout = (session: Session) => {
     dispatch(
       startWorkout({
@@ -132,7 +200,6 @@ export default function HomeScreen({
       }),
     );
 
-    // Tự động chuyển hướng sang màn hình WorkoutSessionScreen
     if (navigation?.navigate) {
       navigation.navigate("WorkoutSession", {
         planId: session.planId,
@@ -191,7 +258,7 @@ export default function HomeScreen({
 
         <SectionHeading title="Buổi tập hôm nay" />
         <TodaySessionSection
-          sessions={homeData.sessions}
+          sessions={userSessions}
           now={now}
           onStartSession={handleStartWorkout}
           onSessionPress={(session) =>
@@ -201,10 +268,10 @@ export default function HomeScreen({
               lines: [
                 `Ngày tập: ${formatDate(session.scheduledDate)}`,
                 `Chương trình: ${
-                  homeData.plans.find((p) => p._id === session.planId)?.name ??
+                  userPlans.find((p) => p._id === session.planId)?.name ??
                   "Chưa có thông tin"
                 }`,
-                "Chi tiết bài tập của buổi này chưa có trong dữ liệu hiện tại.",
+                "Nhấn Bắt đầu tập để ghi nhận các hiệp tập ngay bây giờ.",
               ],
             })
           }
@@ -222,23 +289,16 @@ export default function HomeScreen({
           }}>
           <SectionHeading title="Chương trình của bạn" />
           <PlanSection
-            plans={homeData.plans}
-            sessions={homeData.sessions}
-            onPlanPress={(plan) => {
-              const sessions = homeData.sessions.filter(
+            plans={userPlans}
+            sessions={userSessions}
+            onPlanPress={(plan, coverUri) => {
+              const planSessions = userSessions.filter(
                 (session) => session.planId === plan._id,
               );
-              setDetail({
-                label: plan.generatedByAI
-                  ? "Chương trình AI"
-                  : "Chương trình tự tạo",
-                title: plan.name,
-                lines: sessions.length
-                  ? sessions.map(
-                      (session) =>
-                        `${formatDate(session.scheduledDate)} · ${session.name}`,
-                    )
-                  : ["Chưa có buổi tập trong chương trình này."],
+              navigation.navigate("PlanDetail", {
+                plan,
+                sessions: planSessions,
+                coverUri,
               });
             }}
           />
@@ -273,7 +333,7 @@ export default function HomeScreen({
         activeTabId={activeTab}
         onTabChange={(tab) => {
           if (tab === "history") {
-            const activePlanId = homeData.plans[0]?._id;
+            const activePlanId = userPlans[0]?._id;
             navigation.navigate("History", { planId: activePlanId });
             return;
           }

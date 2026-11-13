@@ -1,6 +1,6 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import { Exercise, WorkoutPlan } from "../types";
+import { Exercise, WorkoutPlan, WorkoutSession } from "../types";
 
 export type RootStackParamList = {
   Home: { tab?: "home" | "plan" } | undefined;
@@ -19,7 +19,11 @@ export type RootStackParamList = {
       }
     | undefined;
   Plan: undefined;
-  PlanDetail: { plan: WorkoutPlan };
+  PlanDetail: {
+    plan: WorkoutPlan;
+    sessions?: WorkoutSession[];
+    coverUri?: string;
+  };
   ExerciseDetail: {
     exerciseId: string;
     exercise?: Exercise;
