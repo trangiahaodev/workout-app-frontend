@@ -1,8 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { YStack, XStack, ScrollView, Input, useTheme } from "tamagui";
+import { Alert, Platform, Vibration } from "react-native";
+import { YStack, XStack, ScrollView, Input, Image, useTheme } from "tamagui";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  usePreventRemove,
+} from "@react-navigation/native";
 import { RootState } from "../store";
 import { startWorkout, logSet } from "../store/slices/workoutSlice";
 import axiosClient from "../api/axiosClient";
@@ -138,7 +144,12 @@ export default function WorkoutSessionScreen({
 
   useEffect(() => {
     if (restLeft <= 0) return;
-    const timer = setTimeout(() => setRestLeft(restLeft - 1), 1000);
+    const timer = setTimeout(() => {
+      if (restLeft === 1) {
+        Vibration.vibrate([0, 500, 200, 500]);
+      }
+      setRestLeft(restLeft - 1);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [restLeft]);
 
@@ -256,6 +267,31 @@ export default function WorkoutSessionScreen({
     }));
   };
 
+  const pickPhoto = async (exId: string, fromCamera: boolean) => {
+    const permission = fromCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Chưa có quyền truy cập",
+        "Hãy cho phép ứng dụng dùng camera hoặc thư viện ảnh trong Cài đặt.",
+      );
+      return;
+    }
+    const result = fromCamera
+      ? await ImagePicker.launchCameraAsync({
+          mediaTypes: "images",
+          quality: 0.7,
+        })
+      : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: "images",
+          quality: 0.7,
+        });
+    if (!result.canceled) {
+      changeExtra(exId, "progressPhotoUrl", result.assets[0].uri);
+    }
+  };
+
   const handleBack = () => {
     if (propOnBack) {
       propOnBack();
@@ -289,6 +325,20 @@ export default function WorkoutSessionScreen({
     .flat()
     .filter((s) => s.isCompleted).length;
   const totalSets = list.length * SETS.length;
+
+  usePreventRemove(doneCount > 0, ({ data }) => {
+    const leave = () => navigation.dispatch(data.action);
+    const message =
+      "Buổi tập chưa hoàn thành, các hiệp đã tick sẽ chưa được lưu. Bạn có chắc muốn thoát?";
+    if (Platform.OS === "web") {
+      if (window.confirm(message)) leave();
+      return;
+    }
+    Alert.alert("Thoát buổi tập?", message, [
+      { text: "Ở lại", style: "cancel" },
+      { text: "Thoát", style: "destructive", onPress: leave },
+    ]);
+  });
 
   const ex = list[current];
 
@@ -507,25 +557,32 @@ export default function WorkoutSessionScreen({
               value={getExtra(ex._id).notes}
               onChangeText={(text) => changeExtra(ex._id, "notes", text)}
             />
-            <Input
-              height={44}
-              paddingHorizontal="$3"
-              fontSize={14}
-              color="$textPrimary"
-              placeholder="Link ảnh tiến trình (https://...)"
-              placeholderTextColor="$textTertiary"
-              backgroundColor="$surfaceSubtle"
-              borderWidth={1}
-              borderColor="$borderColor"
-              borderRadius={12}
-              focusStyle={{ borderColor: "$primary" }}
-              autoCapitalize="none"
-              keyboardType="url"
-              value={getExtra(ex._id).progressPhotoUrl}
-              onChangeText={(text) =>
-                changeExtra(ex._id, "progressPhotoUrl", text)
-              }
-            />
+            <XStack gap="$2">
+              <PrimaryButton
+                flex={1}
+                width="auto"
+                size="sm"
+                variant="secondary"
+                title="Chụp ảnh"
+                onPress={() => pickPhoto(ex._id, true)}
+              />
+              <PrimaryButton
+                flex={1}
+                width="auto"
+                size="sm"
+                variant="secondary"
+                title="Chọn từ thư viện"
+                onPress={() => pickPhoto(ex._id, false)}
+              />
+            </XStack>
+            {getExtra(ex._id).progressPhotoUrl !== "" && (
+              <Image
+                src={getExtra(ex._id).progressPhotoUrl}
+                width="100%"
+                height={200}
+                borderRadius={12}
+              />
+            )}
           </Card>
         )}
 
