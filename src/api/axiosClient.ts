@@ -9,11 +9,13 @@ const axiosClient = axios.create({
   timeout: 10000,
 });
 
-// Bắt lỗi toàn cục để tránh crash app
+// Bắt lỗi toàn cục để tránh crash app (bỏ qua 404 dự kiến để không bật LogBox)
 axiosClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    console.error("API Error:", error.response?.data || error.message);
+    if (error.response?.status !== 404) {
+      console.error("API Error:", error.response?.data || error.message);
+    }
     return Promise.reject(error);
   },
 );

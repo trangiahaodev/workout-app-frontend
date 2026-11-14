@@ -120,9 +120,13 @@ export async function login(payload: LoginPayload): Promise<AuthSession> {
 export async function register(
   payload: RegisterPayload,
 ): Promise<AuthSession | null> {
-  const res = await axiosClient.post<never, unknown>("/auth/register", payload, {
-    timeout: AUTH_TIMEOUT,
-  });
+  const res = await axiosClient.post<never, unknown>(
+    "/auth/register",
+    payload,
+    {
+      timeout: AUTH_TIMEOUT,
+    },
+  );
   return parseAuthResponse(res);
 }
 

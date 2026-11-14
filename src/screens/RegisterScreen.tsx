@@ -1,9 +1,14 @@
 import React, { useRef, useState } from "react";
+import { Alert, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { XStack, YStack } from "tamagui";
 import { BaseText, PrimaryButton } from "../components";
 import {
-  AuthField, AuthLayout, EMAIL_PATTERN, SLOW_SERVER_HINT, useSlowHint,
+  AuthField,
+  AuthLayout,
+  EMAIL_PATTERN,
+  SLOW_SERVER_HINT,
+  useSlowHint,
 } from "../components/auth/authUi";
 import { useAuth } from "../hooks/useAuth";
 import { RegisterScreenNavigationProp } from "../navigation/authTypes";
@@ -32,7 +37,8 @@ export default function RegisterScreen() {
     const next: FieldErrors = {};
     const trimmed = email.trim();
     if (!trimmed) next.email = "Vui lòng nhập email.";
-    else if (!EMAIL_PATTERN.test(trimmed)) next.email = "Email không đúng định dạng.";
+    else if (!EMAIL_PATTERN.test(trimmed))
+      next.email = "Email không đúng định dạng.";
     if (!password) next.password = "Vui lòng nhập mật khẩu.";
     else if (password.length < MIN_PASSWORD_LENGTH) {
       next.password = `Mật khẩu cần ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`;
@@ -50,21 +56,45 @@ export default function RegisterScreen() {
     setSubmitting(true);
     try {
       const name = fullName.trim();
-      // Thành công → AuthGate tự chuyển sang app chính (màn này unmount).
+      const trimmedEmail = email.trim();
       await signUp({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
         ...(name ? { fullName: name } : {}),
       });
+
+      if (Platform.OS === "web") {
+        globalThis.alert?.(
+          "Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.",
+        );
+        navigation.navigate("Login", { email: trimmedEmail || undefined });
+      } else {
+        Alert.alert(
+          "Đăng ký thành công",
+          "Tài khoản đã được tạo. Vui lòng đăng nhập để thiết lập mục tiêu tập luyện.",
+          [
+            {
+              text: "Đăng nhập",
+              onPress: () =>
+                navigation.navigate("Login", {
+                  email: trimmedEmail || undefined,
+                }),
+            },
+          ],
+        );
+      }
     } catch (err) {
       setApiError(authErrorMessage(err));
+    } finally {
       submittingRef.current = false;
       setSubmitting(false);
     }
   }
 
   return (
-    <AuthLayout title="Tạo tài khoản" subtitle="Đăng ký để lưu lại lịch tập và nhật ký của bạn.">
+    <AuthLayout
+      title="Tạo tài khoản"
+      subtitle="Đăng ký để lưu lại lịch tập và nhật ký của bạn.">
       <YStack gap="$3">
         <AuthField
           label="Họ tên (không bắt buộc)"
@@ -105,21 +135,29 @@ export default function RegisterScreen() {
           autoComplete="new-password"
           textContentType="newPassword"
           readOnly={submitting}
-          onSubmitEditing={() => { void handleSubmit(); }}
+          onSubmitEditing={() => {
+            void handleSubmit();
+          }}
         />
       </YStack>
 
       <YStack gap="$3">
         {apiError ? (
-          <BaseText color="$accent" accessibilityRole="alert">{apiError}</BaseText>
+          <BaseText color="$accent" accessibilityRole="alert">
+            {apiError}
+          </BaseText>
         ) : null}
-        {slow ? <BaseText variant="caption">{SLOW_SERVER_HINT}</BaseText> : null}
+        {slow ? (
+          <BaseText variant="caption">{SLOW_SERVER_HINT}</BaseText>
+        ) : null}
         <PrimaryButton
           title="Đăng ký"
           size="lg"
           loading={submitting}
           accessibilityRole="button"
-          onPress={() => { void handleSubmit(); }}
+          onPress={() => {
+            void handleSubmit();
+          }}
         />
         <XStack justifyContent="center" gap="$1.5" flexWrap="wrap">
           <BaseText variant="body">Đã có tài khoản?</BaseText>
@@ -127,7 +165,9 @@ export default function RegisterScreen() {
             fontWeight="700"
             accessibilityRole="link"
             disabled={submitting}
-            onPress={() => navigation.navigate("Login", { email: email.trim() || undefined })}>
+            onPress={() =>
+              navigation.navigate("Login", { email: email.trim() || undefined })
+            }>
             Đăng nhập
           </BaseText>
         </XStack>

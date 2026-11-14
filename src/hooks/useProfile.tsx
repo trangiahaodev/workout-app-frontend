@@ -1,8 +1,18 @@
 import React, {
-  createContext, useCallback, useContext, useEffect, useRef, useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
+import { isAxiosError } from "axios";
 import { useAuth } from "./useAuth";
-import { getProfile, profileErrorMessage, upsertProfile } from "../services/profileService";
+import {
+  getProfile,
+  profileErrorMessage,
+  upsertProfile,
+} from "../services/profileService";
 import { Profile, UpsertProfilePayload } from "../types";
 
 interface ProfileContextValue {
@@ -35,7 +45,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       const result = await getProfile(userId);
       if (current === request.current) setProfile(result);
     } catch (err) {
-      if (current === request.current) setError(profileErrorMessage(err));
+      if (current === request.current) {
+        if (isAxiosError(err) && err.response?.status === 404) {
+          setProfile(null);
+          setError(null);
+        } else {
+          setError(profileErrorMessage(err));
+        }
+      }
     } finally {
       if (current === request.current) setLoading(false);
     }
@@ -43,12 +60,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void reload();
-    return () => { request.current += 1; };
+    return () => {
+      request.current += 1;
+    };
   }, [reload]);
 
   const save = useCallback(async (payload: UpsertProfilePayload) => {
     const result = await upsertProfile(payload);
-    // Invalidate an older GET so it cannot overwrite a successful save.
     request.current += 1;
     setProfile(result);
     setError(null);

@@ -1,12 +1,24 @@
 import React, {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store";
 import { finishWorkout } from "../store/slices/workoutSlice";
 import {
-  AuthSession, LoginPayload, RegisterPayload, clearSession, loadSession,
-  login, register, saveSession, setAuthHeader,
+  AuthSession,
+  LoginPayload,
+  RegisterPayload,
+  clearSession,
+  loadSession,
+  login,
+  register,
+  saveSession,
+  setAuthHeader,
 } from "../services/authService";
 
 export type AuthStatus = "loading" | "signedOut" | "signedIn";
@@ -40,21 +52,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session) applySession(session);
       else setStatus("signedOut");
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [applySession]);
 
-  const signIn = useCallback(async (payload: LoginPayload) => {
-    const session = await login(payload);
-    await saveSession(session);
-    applySession(session);
-  }, [applySession]);
+  const signIn = useCallback(
+    async (payload: LoginPayload) => {
+      const session = await login(payload);
+      await saveSession(session);
+      applySession(session);
+    },
+    [applySession],
+  );
+
+  // const signUp = useCallback(async (payload: RegisterPayload) => {
+  //   const session = (await register(payload)) ??
+  //     (await login({ email: payload.email, password: payload.password }));
+  //   await saveSession(session);
+  //   applySession(session);
+  // }, [applySession]);
 
   const signUp = useCallback(async (payload: RegisterPayload) => {
-    const session = (await register(payload)) ??
-      (await login({ email: payload.email, password: payload.password }));
-    await saveSession(session);
-    applySession(session);
-  }, [applySession]);
+    await register(payload);
+  }, []);
 
   const signOut = useCallback(async () => {
     try {

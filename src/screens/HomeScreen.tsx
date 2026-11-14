@@ -40,8 +40,17 @@ import {
   MOCK_LOGS,
 } from "../components/home/mockData";
 import { startWorkout } from "../store/slices/workoutSlice";
+import { getPlansByProfile, getPlanSessions } from "../services/planService";
 import axiosClient from "../api/axiosClient";
-import { Exercise, GoalType, WorkoutPlan, WorkoutSession } from "../types";
+import {
+  Exercise,
+  GoalType,
+  WorkoutLog,
+  WorkoutPlan,
+  WorkoutSession,
+} from "../types";
+
+const DEMO_PROFILE_ID = "670c1a111111111111111101";
 
 const defaultHomeData: HomeData = {
   profile: mockProfile,
@@ -90,6 +99,7 @@ export default function HomeScreen({
   } = useProfile();
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
+  const didInitialFocus = useRef(false);
 
   const scroll = useRef<any>(null);
   const positions = useRef<Record<string, number>>({ home: 0 });
@@ -99,10 +109,14 @@ export default function HomeScreen({
     initialData ?? defaultHomeData,
   );
 
-  // Làm mới profile (để cập nhật mục tiêu nếu user vừa sửa ở ProfileScreen) & cuộn đúng tab
+  // Bỏ qua lần mount đầu (ProfileGate vừa tải xong), chỉ làm mới khi quay lại Home sau đó
   useFocusEffect(
     useCallback(() => {
-      void reloadRef.current();
+      if (didInitialFocus.current) {
+        void reloadRef.current();
+      } else {
+        didInitialFocus.current = true;
+      }
 
       const tab = route.params?.tab ?? "home";
       setActiveTab(tab);
@@ -116,51 +130,69 @@ export default function HomeScreen({
     }, [route.params?.tab]),
   );
 
+  // 1. Tải danh sách bài tập từ GET /api/v1/exercises
   useEffect(() => {
     let isMounted = true;
 
-    async function loadData() {
-      try {
-        const [exRes, plansRes, sessionsRes] = await Promise.all([
-          axiosClient.get("/exercises").catch(() => null),
-          axiosClient.get("/plans").catch(() => null),
-          axiosClient.get("/sessions").catch(() => null),
-        ]);
-
+    axiosClient
+      .get("/exercises")
+      .then((exRes: unknown) => {
         const fetchedExercises = unwrapArray<Exercise>(exRes);
-        const fetchedPlans = unwrapArray<WorkoutPlan>(plansRes);
-        const fetchedSessions = unwrapArray<WorkoutSession>(sessionsRes);
-
-        if (isMounted) {
+        if (isMounted && fetchedExercises && fetchedExercises.length > 0) {
           setHomeData((prev) => ({
             ...prev,
-            exercises:
-              fetchedExercises && fetchedExercises.length > 0
-                ? fetchedExercises
-                : prev.exercises,
-            plans:
-              fetchedPlans && fetchedPlans.length > 0
-                ? fetchedPlans
-                : prev.plans,
-            sessions:
-              fetchedSessions && fetchedSessions.length > 0
-                ? fetchedSessions
-                : prev.sessions,
+            exercises: fetchedExercises,
           }));
         }
-      } catch (err) {
-        console.log("Using local mock fallback:", err);
-      }
-    }
-
-    loadData();
+      })
+      .catch(() => {
+        // Fallback an toàn về mockExercises
+      });
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Lọc tối đa 3 chương trình tập tương ứng với mục tiêu trong hồ sơ của user
+  // 2. Tải plans & sessions theo đúng endpoint có sẵn trong planService.ts
+  useEffect(() => {
+    if (!profile?._id) return;
+    let isMounted = true;
+
+    async function loadPlanAndSessionData() {
+      const fetchedPlans = await getPlansByProfile(profile!._id).catch(
+        () => [],
+      );
+      const activeGoal: GoalType = profile?.goal || "Tăng cơ";
+
+      const targetPlans =
+        fetchedPlans.length > 0
+          ? fetchedPlans
+          : mockPlans.filter((p) => p.goal === activeGoal);
+
+      const sessionGroups = await Promise.all(
+        targetPlans.map((p) => getPlanSessions(p._id).catch(() => [])),
+      );
+      const fetchedSessions = sessionGroups.flat();
+
+      if (isMounted) {
+        setHomeData((prev) => ({
+          ...prev,
+          plans: fetchedPlans.length > 0 ? fetchedPlans : prev.plans,
+          sessions:
+            fetchedSessions.length > 0 ? fetchedSessions : prev.sessions,
+        }));
+      }
+    }
+
+    void loadPlanAndSessionData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile?._id, profile?.goal]);
+
+  // Lọc tối đa 3 chương trình tập tương ứng với mục tiêu của user
   const userPlans = useMemo<WorkoutPlan[]>(() => {
     const activeGoal: GoalType = profile?.goal || "Tăng cơ";
     const matched = homeData.plans.filter((p) => p.goal === activeGoal);
@@ -191,6 +223,24 @@ export default function HomeScreen({
       return s;
     });
   }, [homeData.sessions, userPlans, now]);
+
+  // Chỉ hiển thị nhật ký mẫu cho tài khoản demo; tài khoản mới bắt đầu trống
+  const userLogs = useMemo<WorkoutLog[]>(() => {
+    if (!profile) return [];
+    const isDemoAccount = profile._id === DEMO_PROFILE_ID;
+    const validSessionIds = new Set(userSessions.map((s) => s._id));
+
+    return homeData.logs.filter((log) => {
+      if (!isDemoAccount && log._id.startsWith("670c1a4444444444444444")) {
+        return false;
+      }
+      const sid =
+        typeof log.sessionId === "string"
+          ? log.sessionId
+          : ((log.sessionId as { _id?: string })?._id ?? "");
+      return validSessionIds.has(sid);
+    });
+  }, [homeData.logs, userSessions, profile]);
 
   const handleStartWorkout = (session: Session) => {
     dispatch(
@@ -320,7 +370,7 @@ export default function HomeScreen({
             positions.current.history = event.nativeEvent.layout.y;
           }}>
           <SectionHeading title="Nhật ký gần đây" />
-          <RecentLogsSection logs={homeData.logs} />
+          <RecentLogsSection logs={userLogs} />
         </YStack>
       </ScrollView>
 
