@@ -32,32 +32,18 @@ import {
 } from "../components/home/HomeDetailModal";
 import { formatDate, SectionHeading, ui } from "../components/home/homeUi";
 import { HomeData, Session } from "../components/home/types";
-import {
-  mockProfile,
-  mockPlans,
-  mockSessions,
-  mockExercises,
-  MOCK_LOGS,
-} from "../components/home/mockData";
+import { mockProfile, mockExercises } from "../components/home/mockData";
 import { startWorkout } from "../store/slices/workoutSlice";
 import { getPlansByProfile, getPlanSessions } from "../services/planService";
 import axiosClient from "../api/axiosClient";
-import {
-  Exercise,
-  GoalType,
-  WorkoutLog,
-  WorkoutPlan,
-  WorkoutSession,
-} from "../types";
-
-const DEMO_PROFILE_ID = "670c1a111111111111111101";
+import { Exercise, WorkoutLog, WorkoutPlan, WorkoutSession } from "../types";
 
 const defaultHomeData: HomeData = {
   profile: mockProfile,
-  plans: mockPlans,
-  sessions: mockSessions,
+  plans: [],
+  sessions: [],
   exercises: mockExercises,
-  logs: MOCK_LOGS,
+  logs: [],
 };
 
 function unwrapArray<T>(res: unknown): T[] | null {
@@ -71,14 +57,6 @@ function unwrapArray<T>(res: unknown): T[] | null {
     return (res as { data: T[] }).data;
   }
   return null;
-}
-
-function isSameLocalDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
 }
 
 export default function HomeScreen({
@@ -109,29 +87,9 @@ export default function HomeScreen({
     initialData ?? defaultHomeData,
   );
 
-  // Bỏ qua lần mount đầu (ProfileGate vừa tải xong), chỉ làm mới khi quay lại Home sau đó
-  useFocusEffect(
-    useCallback(() => {
-      if (didInitialFocus.current) {
-        void reloadRef.current();
-      } else {
-        didInitialFocus.current = true;
-      }
-
-      const tab = route.params?.tab ?? "home";
-      setActiveTab(tab);
-      const frame = requestAnimationFrame(() => {
-        scroll.current?.scrollTo({
-          y: positions.current[tab] ?? 0,
-          animated: true,
-        });
-      });
-      return () => cancelAnimationFrame(frame);
-    }, [route.params?.tab]),
-  );
-
   // 1. Tải danh sách bài tập từ GET /api/v1/exercises
   useEffect(() => {
+    if (initialData) return;
     let isMounted = true;
 
     axiosClient
@@ -145,102 +103,87 @@ export default function HomeScreen({
           }));
         }
       })
-      .catch(() => {
-        // Fallback an toàn về mockExercises
-      });
+      .catch(() => {});
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialData]);
 
-  // 2. Tải plans & sessions theo đúng endpoint có sẵn trong planService.ts
-  useEffect(() => {
-    if (!profile?._id) return;
-    let isMounted = true;
+  // 2. Tải lộ trình, buổi tập và nhật ký thật của user đang đăng nhập
+  const loadRoadmapData = useCallback(async () => {
+    if (initialData || !profile?._id) return;
 
-    async function loadPlanAndSessionData() {
-      const fetchedPlans = await getPlansByProfile(profile!._id).catch(
-        () => [],
-      );
-      const activeGoal: GoalType = profile?.goal || "Tăng cơ";
-
-      const targetPlans =
-        fetchedPlans.length > 0
-          ? fetchedPlans
-          : mockPlans.filter((p) => p.goal === activeGoal);
-
-      const sessionGroups = await Promise.all(
-        targetPlans.map((p) => getPlanSessions(p._id).catch(() => [])),
-      );
-      const fetchedSessions = sessionGroups.flat();
-
-      if (isMounted) {
-        setHomeData((prev) => ({
-          ...prev,
-          plans: fetchedPlans.length > 0 ? fetchedPlans : prev.plans,
-          sessions:
-            fetchedSessions.length > 0 ? fetchedSessions : prev.sessions,
-        }));
-      }
+    const fetchedPlans = await getPlansByProfile(profile._id).catch(() => []);
+    if (fetchedPlans.length === 0) {
+      setHomeData((prev) => ({
+        ...prev,
+        plans: [],
+        sessions: [],
+        logs: [],
+      }));
+      return;
     }
 
-    void loadPlanAndSessionData();
+    const sessionGroups = await Promise.all(
+      fetchedPlans.map((p) => getPlanSessions(p._id).catch(() => [])),
+    );
+    const fetchedSessions = sessionGroups.flat();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [profile?._id, profile?.goal]);
-
-  // Lọc tối đa 3 chương trình tập tương ứng với mục tiêu của user
-  const userPlans = useMemo<WorkoutPlan[]>(() => {
-    const activeGoal: GoalType = profile?.goal || "Tăng cơ";
-    const matched = homeData.plans.filter((p) => p.goal === activeGoal);
-    return matched.length > 0
-      ? matched.slice(0, 3)
-      : homeData.plans.slice(0, 3);
-  }, [homeData.plans, profile?.goal]);
-
-  // Lọc các buổi tập thuộc 3 chương trình trên & neo buổi pending đầu tiên vào hôm nay
-  const userSessions = useMemo<WorkoutSession[]>(() => {
-    const planIds = new Set(userPlans.map((p) => p._id));
-    const filtered = homeData.sessions.filter((s) => planIds.has(s.planId));
-
-    const hasTodaySession = filtered.some(
-      (s) =>
-        s.status === "pending" &&
-        isSameLocalDay(new Date(s.scheduledDate), now),
+    const logGroups = await Promise.all(
+      fetchedSessions.map((s) =>
+        axiosClient.get(`/logs/session/${s._id}`).catch(() => []),
+      ),
+    );
+    const fetchedLogs = logGroups.flatMap(
+      (res) => unwrapArray<WorkoutLog>(res) ?? [],
     );
 
-    if (hasTodaySession) return filtered;
+    setHomeData((prev) => ({
+      ...prev,
+      plans: fetchedPlans,
+      sessions: fetchedSessions,
+      logs: fetchedLogs,
+    }));
+  }, [initialData, profile?._id]);
 
-    let promoted = false;
-    return filtered.map((s) => {
-      if (!promoted && s.status === "pending") {
-        promoted = true;
-        return { ...s, scheduledDate: now.toISOString() };
+  useEffect(() => {
+    void loadRoadmapData();
+  }, [loadRoadmapData]);
+
+  // Làm mới dữ liệu khi quay lại Home (từ Profile hoặc sau khi tập xong)
+  useFocusEffect(
+    useCallback(() => {
+      if (didInitialFocus.current) {
+        void reloadRef.current();
+        void loadRoadmapData();
+      } else {
+        didInitialFocus.current = true;
       }
-      return s;
-    });
-  }, [homeData.sessions, userPlans, now]);
 
-  // Chỉ hiển thị nhật ký mẫu cho tài khoản demo; tài khoản mới bắt đầu trống
-  const userLogs = useMemo<WorkoutLog[]>(() => {
-    if (!profile) return [];
-    const isDemoAccount = profile._id === DEMO_PROFILE_ID;
-    const validSessionIds = new Set(userSessions.map((s) => s._id));
+      const tab = route.params?.tab ?? "home";
+      setActiveTab(tab);
+      const frame = requestAnimationFrame(() => {
+        scroll.current?.scrollTo({
+          y: positions.current[tab] ?? 0,
+          animated: true,
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    }, [route.params?.tab, loadRoadmapData]),
+  );
 
-    return homeData.logs.filter((log) => {
-      if (!isDemoAccount && log._id.startsWith("670c1a4444444444444444")) {
-        return false;
-      }
-      const sid =
-        typeof log.sessionId === "string"
-          ? log.sessionId
-          : ((log.sessionId as { _id?: string })?._id ?? "");
-      return validSessionIds.has(sid);
-    });
-  }, [homeData.logs, userSessions, profile]);
+  // Chỉ lấy các lộ trình đang active để hiển thị trên HomeScreen
+  const activePlans = useMemo<WorkoutPlan[]>(() => {
+    return homeData.plans.filter((p) => p.status === "active");
+  }, [homeData.plans]);
+
+  const activePlan = activePlans[0];
+
+  const activeSessions = useMemo<WorkoutSession[]>(() => {
+    if (!activePlan) return [];
+    return homeData.sessions.filter((s) => s.planId === activePlan._id);
+  }, [homeData.sessions, activePlan]);
 
   const handleStartWorkout = (session: Session) => {
     dispatch(
@@ -308,7 +251,7 @@ export default function HomeScreen({
 
         <SectionHeading title="Buổi tập hôm nay" />
         <TodaySessionSection
-          sessions={userSessions}
+          sessions={activeSessions}
           now={now}
           onStartSession={handleStartWorkout}
           onSessionPress={(session) =>
@@ -317,11 +260,8 @@ export default function HomeScreen({
               title: session.name,
               lines: [
                 `Ngày tập: ${formatDate(session.scheduledDate)}`,
-                `Chương trình: ${
-                  userPlans.find((p) => p._id === session.planId)?.name ??
-                  "Chưa có thông tin"
-                }`,
-                "Nhấn Bắt đầu tập để ghi nhận các hiệp tập ngay bây giờ.",
+                `Lộ trình: ${activePlan?.name ?? "Chưa có thông tin"}`,
+                "Nhấn Bắt đầu tập ngay để ghi nhận các hiệp tập.",
               ],
             })
           }
@@ -337,21 +277,33 @@ export default function HomeScreen({
               });
             }
           }}>
-          <SectionHeading title="Chương trình của bạn" />
-          <PlanSection
-            plans={userPlans}
-            sessions={userSessions}
-            onPlanPress={(plan, coverUri) => {
-              const planSessions = userSessions.filter(
-                (session) => session.planId === plan._id,
-              );
-              navigation.navigate("PlanDetail", {
-                plan,
-                sessions: planSessions,
-                coverUri,
-              });
-            }}
-          />
+          <SectionHeading title="Lộ trình của bạn" />
+          {activePlans.length > 0 ? (
+            <PlanSection
+              plans={activePlans}
+              sessions={homeData.sessions}
+              onPlanPress={(plan, coverUri) => {
+                const planSessions = homeData.sessions.filter(
+                  (session) => session.planId === plan._id,
+                );
+                navigation.navigate("PlanDetail", {
+                  plan,
+                  sessions: planSessions,
+                  coverUri,
+                });
+              }}
+            />
+          ) : (
+            <Card gap="$3">
+              <BaseText color="$textSecondary">
+                Bạn chưa có lộ trình tập luyện nào.
+              </BaseText>
+              <PrimaryButton
+                title="Thiết lập lộ trình"
+                onPress={() => navigation.navigate("Profile")}
+              />
+            </Card>
+          )}
         </YStack>
 
         <SectionHeading title="Thư viện bài tập" />
@@ -370,7 +322,7 @@ export default function HomeScreen({
             positions.current.history = event.nativeEvent.layout.y;
           }}>
           <SectionHeading title="Nhật ký gần đây" />
-          <RecentLogsSection logs={userLogs} />
+          <RecentLogsSection logs={homeData.logs} />
         </YStack>
       </ScrollView>
 
@@ -383,8 +335,7 @@ export default function HomeScreen({
         activeTabId={activeTab}
         onTabChange={(tab) => {
           if (tab === "history") {
-            const activePlanId = userPlans[0]?._id;
-            navigation.navigate("History", { planId: activePlanId });
+            navigation.navigate("History", { planId: activePlan?._id });
             return;
           }
           setActiveTab(tab);

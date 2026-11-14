@@ -1,11 +1,20 @@
 import axiosClient from "../api/axiosClient";
 import {
   CreatePlanPayload,
+  GoalType,
+  LevelType,
   PlanStatus,
   UpdatePlanStatusPayload,
   WorkoutPlan,
   WorkoutSession,
 } from "../types";
+
+export interface GenerateRoadmapPayload {
+  profileId: string;
+  goal: GoalType;
+  level: LevelType;
+  trainingDaysPerWeek: number;
+}
 
 // axiosClient đã trả về response.data; ở đây chấp nhận cả dạng { data: ... }
 function unwrap<T>(res: unknown): T {
@@ -51,3 +60,10 @@ export const getPlanSessions = async (
   const list = unwrap<unknown>(res);
   return Array.isArray(list) ? (list as WorkoutSession[]) : [];
 };
+
+// POST /plans/generate
+export async function generateRoadmap(
+  payload: GenerateRoadmapPayload,
+): Promise<{ plan: WorkoutPlan; sessions: WorkoutSession[] }> {
+  return axiosClient.post("/plans/generate", payload);
+}

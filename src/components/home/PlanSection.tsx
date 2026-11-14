@@ -10,6 +10,12 @@ const FALLBACK_COVERS = [
   "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=80",
 ];
 
+const STATUS_CONFIG: Record<string, { label: string; bg: string }> = {
+  active: { label: "Đang áp dụng", bg: "rgba(22, 163, 74, 0.9)" },
+  completed: { label: "Hoàn thành", bg: "rgba(59, 130, 246, 0.9)" },
+  abandoned: { label: "Đã hủy", bg: "rgba(107, 114, 128, 0.9)" },
+};
+
 interface PlanSectionProps {
   plans: WorkoutPlan[];
   sessions: WorkoutSession[];
@@ -30,7 +36,7 @@ export function PlanSection({
         borderWidth={1}
         borderColor="$borderColor">
         <BaseText color="$textSecondary">
-          Chưa có chương trình tập luyện nào cho mục tiêu này.
+          Chưa có lộ trình tập luyện nào.
         </BaseText>
       </YStack>
     );
@@ -45,6 +51,10 @@ export function PlanSection({
         ).length;
         const coverUri =
           plan.coverImage || FALLBACK_COVERS[index % FALLBACK_COVERS.length];
+        const statusBadge = STATUS_CONFIG[plan.status] ?? {
+          label: "Đã hủy",
+          bg: "rgba(107, 114, 128, 0.9)",
+        };
 
         return (
           <YStack
@@ -56,7 +66,7 @@ export function PlanSection({
             borderColor="$borderColor"
             pressStyle={{ opacity: 0.92, scale: 0.99 }}
             onPress={() => onPlanPress(plan, coverUri)}>
-            {/* Ảnh bìa chương trình */}
+            {/* Ảnh bìa lộ trình */}
             <YStack height={135} backgroundColor="#1C1C1E" position="relative">
               <Image
                 source={{ uri: coverUri }}
@@ -71,26 +81,20 @@ export function PlanSection({
                 opacity={0.88}
               />
 
-              {/* Badge nguồn tạo */}
+              {/* Badge mục tiêu */}
               <XStack
                 position="absolute"
                 top={12}
                 left={12}
-                backgroundColor={
-                  plan.generatedByAI ? "#EA580C" : "rgba(17, 24, 39, 0.85)"
-                }
+                backgroundColor="rgba(17, 24, 39, 0.85)"
                 paddingHorizontal="$2.5"
                 paddingVertical="$1"
                 borderRadius={999}
                 alignItems="center"
                 gap="$1.5">
-                <Feather
-                  name={plan.generatedByAI ? "cpu" : "edit-3"}
-                  size={11}
-                  color="#FFFFFF"
-                />
+                <Feather name="target" size={11} color="#FFFFFF" />
                 <BaseText fontSize={11} fontWeight="700" color="#FFFFFF">
-                  {plan.generatedByAI ? "AI GỢI Ý" : "TỰ THIẾT KẾ"}
+                  {plan.goal ? plan.goal.toUpperCase() : "LỘ TRÌNH CÁ NHÂN"}
                 </BaseText>
               </XStack>
 
@@ -99,16 +103,12 @@ export function PlanSection({
                 position="absolute"
                 top={12}
                 right={12}
-                backgroundColor={
-                  plan.status === "completed"
-                    ? "rgba(59, 130, 246, 0.9)"
-                    : "rgba(22, 163, 74, 0.9)"
-                }
+                backgroundColor={statusBadge.bg}
                 paddingHorizontal="$2.5"
                 paddingVertical="$1"
                 borderRadius={999}>
                 <BaseText fontSize={11} fontWeight="700" color="#FFFFFF">
-                  {plan.status === "completed" ? "Hoàn thành" : "Đang áp dụng"}
+                  {statusBadge.label}
                 </BaseText>
               </XStack>
             </YStack>

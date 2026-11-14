@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Alert, Platform, Vibration } from "react-native";
 import { YStack, XStack, ScrollView, Input, Image, useTheme } from "tamagui";
 import { Feather } from "@expo/vector-icons";
@@ -10,7 +10,7 @@ import {
   usePreventRemove,
 } from "@react-navigation/native";
 import { RootState } from "../store";
-import { startWorkout, logSet } from "../store/slices/workoutSlice";
+import { logSet } from "../store/slices/workoutSlice";
 import axiosClient from "../api/axiosClient";
 import { Card, BaseText, PrimaryButton, TopHeader } from "../components";
 import { Exercise, WorkoutSession } from "../types";
@@ -54,7 +54,6 @@ function resolveSessionExercises(
   session: WorkoutSession | undefined,
   allExercises: Exercise[],
 ): Exercise[] {
-  // 1. Ưu tiên lấy đúng theo danh sách exercises gắn trong WorkoutSession
   if (session?.exercises && session.exercises.length > 0) {
     const resolved = session.exercises
       .map((item) => {
@@ -68,7 +67,6 @@ function resolveSessionExercises(
     if (resolved.length > 0) return resolved;
   }
 
-  // 2. Fallback thông minh theo tên buổi tập nếu session chưa có mảng exercises
   const name = (session?.name ?? "").toLowerCase();
   if (
     name.includes("lower") ||
@@ -119,7 +117,7 @@ export default function WorkoutSessionScreen({
   const route = useRoute<WorkoutSessionScreenRouteProp>();
 
   const workoutState = useSelector((state: RootState) => state.workout);
-  const { isActive, logs } = workoutState;
+  const { isActive, isCompleted, completedSessionIds, logs } = workoutState;
 
   const planId =
     propPlanId ??
@@ -132,6 +130,15 @@ export default function WorkoutSessionScreen({
     workoutState.sessionId ??
     DEFAULT_SESSION_ID;
 
+  // Chặn truy cập tự do nếu buổi tập chưa được startWorkout() hoặc đã hoàn thành
+  const isStandalonePropMode = Boolean(
+    propPlanId || propSessionId || propExercises.length > 0,
+  );
+  const isFlowBlocked =
+    !isStandalonePropMode &&
+    (!isActive || isCompleted || completedSessionIds.includes(sessionId));
+
+  const isCompletingRef = useRef(false);
   const [list, setList] = useState<Exercise[]>(propExercises);
   const [sessionTitle, setSessionTitle] = useState<string>("Đang tập");
   const [inputs, setInputs] = useState<
@@ -141,6 +148,16 @@ export default function WorkoutSessionScreen({
   const [restLength, setRestLength] = useState(60);
   const [restLeft, setRestLeft] = useState(0);
   const [extras, setExtras] = useState<ExerciseExtras>({});
+
+  // Route Guard: đẩy về Home nếu luồng không hợp lệ hoặc đã hoàn tất
+  useEffect(() => {
+    if (!isFlowBlocked) return;
+    if (navigation?.replace) {
+      navigation.replace("Home");
+    } else if (navigation?.canGoBack?.()) {
+      navigation.goBack();
+    }
+  }, [isFlowBlocked, navigation]);
 
   useEffect(() => {
     if (restLeft <= 0) return;
@@ -154,9 +171,7 @@ export default function WorkoutSessionScreen({
   }, [restLeft]);
 
   useEffect(() => {
-    if (!isActive) {
-      dispatch(startWorkout({ planId, sessionId }));
-    }
+    if (isFlowBlocked) return;
 
     if (list.length === 0) {
       let isMounted = true;
@@ -201,7 +216,7 @@ export default function WorkoutSessionScreen({
         isMounted = false;
       };
     }
-  }, [isActive, dispatch, planId, sessionId, list.length]);
+  }, [isFlowBlocked, planId, sessionId, list.length]);
 
   const getSet = useCallback(
     (exId: string, setId: string) => logs[exId]?.find((s) => s.setId === setId),
@@ -301,20 +316,26 @@ export default function WorkoutSessionScreen({
   };
 
   const { complete, submitting } = useCompleteWorkout((result) => {
+    isCompletingRef.current = true;
+    const params = {
+      planId: result.planId ?? planId,
+      sessionId: result.sessionId ?? sessionId,
+    };
     if (propOnComplete) {
       propOnComplete();
+    } else if (navigation?.replace) {
+      navigation.replace("History", params);
     } else {
-      navigation.navigate("History", {
-        planId: result.planId ?? planId,
-        sessionId: result.sessionId ?? sessionId,
-      });
+      navigation.navigate("History", params);
     }
   });
 
   const handleComplete = async () => {
+    isCompletingRef.current = true;
     try {
       await complete(extras);
     } catch {
+      isCompletingRef.current = false;
       if (propOnComplete) {
         propOnComplete();
       }
@@ -326,19 +347,26 @@ export default function WorkoutSessionScreen({
     .filter((s) => s.isCompleted).length;
   const totalSets = list.length * SETS.length;
 
-  usePreventRemove(doneCount > 0, ({ data }) => {
-    const leave = () => navigation.dispatch(data.action);
-    const message =
-      "Buổi tập chưa hoàn thành, các hiệp đã tick sẽ chưa được lưu. Bạn có chắc muốn thoát?";
-    if (Platform.OS === "web") {
-      if (window.confirm(message)) leave();
-      return;
-    }
-    Alert.alert("Thoát buổi tập?", message, [
-      { text: "Ở lại", style: "cancel" },
-      { text: "Thoát", style: "destructive", onPress: leave },
-    ]);
-  });
+  usePreventRemove(
+    doneCount > 0 && !isFlowBlocked && !submitting && !isCompletingRef.current,
+    ({ data }) => {
+      const leave = () => navigation.dispatch(data.action);
+      const message =
+        "Buổi tập chưa hoàn thành, các hiệp đã tick sẽ chưa được lưu. Bạn có chắc muốn thoát?";
+      if (Platform.OS === "web") {
+        if (window.confirm(message)) leave();
+        return;
+      }
+      Alert.alert("Thoát buổi tập?", message, [
+        { text: "Ở lại", style: "cancel" },
+        { text: "Thoát", style: "destructive", onPress: leave },
+      ]);
+    },
+  );
+
+  if (isFlowBlocked) {
+    return null;
+  }
 
   const ex = list[current];
 

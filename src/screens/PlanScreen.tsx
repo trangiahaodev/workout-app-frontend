@@ -8,17 +8,13 @@ import {
   PrimaryButton,
   TopHeader,
 } from "../components";
-import {
-  PlanCard,
-  PlanFilter,
-  PlanFilterBar,
-} from "../components/plan/planUi";
+import { PlanCard, PlanFilter, PlanFilterBar } from "../components/plan/planUi";
 import {
   createPlan,
   getPlansByProfile,
   updatePlanStatus,
 } from "../services/planService";
-import { DEFAULT_PROFILE_ID, mockPlans } from "../components/home/mockData";
+import { useProfile } from "../hooks/useProfile";
 import { PlanScreenNavigationProp } from "../navigation/types";
 import { WorkoutPlan } from "../types";
 
@@ -26,6 +22,7 @@ const ERROR_COLOR = "#FF453A";
 
 export default function PlanScreen() {
   const navigation = useNavigation<PlanScreenNavigationProp>();
+  const { profile } = useProfile();
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
@@ -36,41 +33,45 @@ export default function PlanScreen() {
   const [message, setMessage] = useState<string | null>(null);
 
   const loadPlans = useCallback(async () => {
+    if (!profile?._id) {
+      setPlans([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      setPlans(await getPlansByProfile(DEFAULT_PROFILE_ID));
+      setPlans(await getPlansByProfile(profile._id));
       setOffline(false);
     } catch {
-      // Server chưa dậy hoặc mất mạng: dùng dữ liệu mẫu để vẫn xem được giao diện
-      setPlans(mockPlans);
+      setPlans([]);
       setOffline(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [profile?._id]);
 
-  // Tải lại mỗi khi quay về màn này (sau khi đổi trạng thái ở màn chi tiết)
   useFocusEffect(
     useCallback(() => {
-      loadPlans();
+      void loadPlans();
     }, [loadPlans]),
   );
 
   const handleCreate = async () => {
+    if (!profile?._id) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      setMessage("Vui lòng nhập tên chương trình.");
+      setMessage("Vui lòng nhập tên lộ trình.");
       return;
     }
     setCreating(true);
     setMessage(null);
     try {
       const created = await createPlan({
-        profileId: DEFAULT_PROFILE_ID,
+        profileId: profile._id,
         name: trimmed,
+        goal: profile.goal,
         generatedByAI: false,
       });
-      // Tạo xong thì kích hoạt plan luôn
       if (created?._id) {
         await updatePlanStatus(created._id, "active");
       }
@@ -80,7 +81,7 @@ export default function PlanScreen() {
       await loadPlans();
     } catch {
       setMessage(
-        "Không tạo được chương trình. Server có thể đang khởi động, thử lại sau 1 phút.",
+        "Không tạo được lộ trình. Server có thể đang khởi động, thử lại sau 1 phút.",
       );
     } finally {
       setCreating(false);
@@ -101,8 +102,8 @@ export default function PlanScreen() {
   return (
     <YStack flex={1} backgroundColor="$background">
       <TopHeader
-        title="Lịch tập"
-        subtitle="Quản lý chương trình tập luyện"
+        title="Lộ trình tập luyện"
+        subtitle="Tổng quan lịch tập theo mục tiêu của bạn"
         onBack={handleBack}
       />
 
@@ -113,14 +114,14 @@ export default function PlanScreen() {
           {showForm ? (
             <Card gap="$3">
               <BaseText fontSize={13} fontWeight="600" color="$textSecondary">
-                Tên chương trình
+                Tên lộ trình
               </BaseText>
               <Input
                 height={44}
                 paddingHorizontal="$3"
                 fontSize={15}
                 color="$textPrimary"
-                placeholder="VD: Calisthenics 4 tuần"
+                placeholder="VD: Tăng cơ 4 tuần"
                 placeholderTextColor="$textTertiary"
                 backgroundColor="$surfaceSubtle"
                 borderWidth={1}
@@ -131,7 +132,7 @@ export default function PlanScreen() {
                 onChangeText={setName}
               />
               <PrimaryButton
-                title={creating ? "Đang tạo..." : "Tạo và kích hoạt"}
+                title={creating ? "Đang tạo..." : "Tạo và áp dụng"}
                 disabled={creating}
                 onPress={handleCreate}
               />
@@ -148,7 +149,7 @@ export default function PlanScreen() {
             </Card>
           ) : (
             <PrimaryButton
-              title="+ Tạo chương trình mới"
+              title="+ Tạo lộ trình mới"
               onPress={() => setShowForm(true)}
             />
           )}
@@ -163,8 +164,7 @@ export default function PlanScreen() {
         {offline ? (
           <Card marginTop="$4" marginBottom="$0" onPress={loadPlans}>
             <BaseText fontSize={13} color="$textSecondary">
-              Không kết nối được server, đang hiển thị dữ liệu mẫu. Bấm vào đây
-              để tải lại.
+              Không kết nối được server. Bấm vào đây để tải lại.
             </BaseText>
           </Card>
         ) : null}
@@ -173,10 +173,15 @@ export default function PlanScreen() {
           {loading ? (
             <Spinner size="large" marginTop="$6" />
           ) : visiblePlans.length === 0 ? (
-            <Card>
+            <Card gap="$3">
               <BaseText color="$textSecondary">
-                Chưa có chương trình nào.
+                Chưa có lộ trình nào. Hãy thiết lập mục tiêu ở Hồ sơ để hệ thống
+                tạo lộ trình cho bạn.
               </BaseText>
+              <PrimaryButton
+                title="Thiết lập mục tiêu"
+                onPress={() => navigation.navigate("Profile")}
+              />
             </Card>
           ) : (
             visiblePlans.map((plan) => (

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
 import { finishWorkout } from "../store/slices/workoutSlice";
 import {
+  completeSession,
   createSession,
   submitWorkoutLogs,
   ExerciseExtras,
@@ -15,24 +16,26 @@ export interface CompleteWorkoutResult {
   sessionId?: string;
 }
 
-// Hàm gắn vào nút Hoàn thành của WorkoutSessionScreen:
-// 1) xác định sessionId  2) gửi log từng bài  3) xoá Redux  4) chuyển màn History
 export function useCompleteWorkout(
   onSuccess?: (result: CompleteWorkoutResult) => void,
 ) {
   const dispatch = useDispatch();
-  const { planId, sessionId: reduxSessionId, logs } = useSelector(
-    (state: RootState) => state.workout,
-  );
+  const {
+    planId,
+    sessionId: reduxSessionId,
+    logs,
+  } = useSelector((state: RootState) => state.workout);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const complete = async (extras: ExerciseExtras = {}) => {
-    if (submitting) return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError(null);
+
     try {
-      // Chỉ gửi những bài có ít nhất 1 set đã hoàn thành (khớp 100% với isCompleted)
       const doneLogs = Object.fromEntries(
         Object.entries(logs).filter(([, sets]) =>
           sets.some((s) => s.isCompleted),
@@ -41,31 +44,21 @@ export function useCompleteWorkout(
 
       let targetSessionId = reduxSessionId;
 
-      // Nếu có planId, thử tạo session thực tế trên MongoDB
-      if (planId) {
+      if (targetSessionId && targetSessionId !== DEFAULT_SESSION_ID) {
         try {
-          const name = `Buổi tập ${new Date().toLocaleDateString("vi-VN")}`;
-          // Buổi tập được tạo ngay khi hoàn tất => đánh dấu completed + completedDate
-          const session = (await createSession(planId, name, {
-            status: "completed",
-            completedDate: new Date().toISOString(),
-          })) as unknown as WorkoutSession;
-          if (session?._id) {
-            targetSessionId = session._id;
-          }
-        } catch (createErr) {
+          await completeSession(targetSessionId);
+        } catch (updateErr) {
           console.warn(
-            "Không thể tạo session qua API, dùng sessionId fallback:",
-            createErr,
+            "Không thể cập nhật trạng thái buổi tập qua API:",
+            updateErr,
           );
         }
       }
 
       if (!targetSessionId) {
-        targetSessionId = DEFAULT_SESSION_ID; // Fallback 24-hex ObjectId
+        targetSessionId = DEFAULT_SESSION_ID;
       }
 
-      // Gửi logs nếu có bài tập đã hoàn thành
       if (Object.keys(doneLogs).length > 0) {
         try {
           await submitWorkoutLogs(targetSessionId, doneLogs, extras);
@@ -74,13 +67,13 @@ export function useCompleteWorkout(
         }
       }
 
-      // finishWorkout xoá sạch Redux nên gọi sau khi gửi xong
       dispatch(finishWorkout());
       onSuccess?.({
         planId: planId ?? undefined,
         sessionId: targetSessionId,
       });
     } catch (e: unknown) {
+      submittingRef.current = false;
       console.error("Lỗi gửi buổi tập:", e);
       setError("Gửi buổi tập thất bại, vui lòng thử lại.");
       throw e;

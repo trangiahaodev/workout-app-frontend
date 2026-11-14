@@ -9,7 +9,7 @@ import {
 
 export type WorkoutLogs = Record<string, SetLog[]>;
 
-// POST /sessions: tạo buổi tập mới
+// POST /sessions: tạo buổi tập mới (chỉ dùng khi tập tự do ngoài lộ trình)
 export const createSession = (
   planId: string,
   name: string,
@@ -20,6 +20,12 @@ export const createSession = (
     name,
     scheduledDate: new Date().toISOString(),
     ...extra,
+  });
+
+// PUT /sessions/{id}/complete: đánh dấu buổi tập trong lộ trình đã hoàn thành
+export const completeSession = (sessionId: string) =>
+  axiosClient.put<never, WorkoutSession>(`/sessions/${sessionId}/complete`, {
+    completedDate: new Date().toISOString(),
   });
 
 // POST /logs: mỗi lần gửi 1 bài tập

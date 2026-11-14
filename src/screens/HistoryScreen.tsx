@@ -14,17 +14,14 @@ import {
   AnalyticsEmptyState,
 } from "../components";
 import { getSessionsByPlan, getLogsBySession } from "../services/logService";
+import { getPlansByProfile } from "../services/planService";
+import { useProfile } from "../hooks/useProfile";
 import { useProgressAnalytics } from "../hooks/useProgressAnalytics";
 import { WorkoutSession, WorkoutLog } from "../types";
 import {
   HistoryScreenNavigationProp,
   HistoryScreenRouteProp,
 } from "../navigation/types";
-import {
-  mockPlans,
-  mockSessions,
-  MOCK_LOGS,
-} from "../components/home/mockData";
 
 interface Props {
   planId?: string;
@@ -37,9 +34,9 @@ export default function HistoryScreen({
 }: Props) {
   const navigation = useNavigation<HistoryScreenNavigationProp>();
   const route = useRoute<HistoryScreenRouteProp>();
+  const { profile } = useProfile();
 
-  // Ưu tiên đọc params từ route, fallback về props hoặc mock default
-  const activePlanId = propPlanId ?? route.params?.planId ?? mockPlans[0]?._id;
+  const activePlanId = propPlanId ?? route.params?.planId;
   const activeSessionId = propSessionId ?? route.params?.sessionId;
 
   const [activeSubTab, setActiveSubTab] = useState<"analytics" | "history">(
@@ -52,85 +49,79 @@ export default function HistoryScreen({
   const [openId, setOpenId] = useState<string | null>(null);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
 
-  // Hook tiến độ phân tích
   const {
     data: analyticsData,
     loading: analyticsLoading,
     isRefreshing: analyticsRefreshing,
     error: analyticsError,
     refetch: refetchAnalytics,
-  } = useProgressAnalytics(activePlanId);
+  } = useProgressAnalytics(activePlanId, profile?._id);
 
   const loadLogsForSession = useCallback(async (sessionId: string) => {
     try {
       const res = await getLogsBySession(sessionId);
-      if (Array.isArray(res) && res.length > 0) {
-        setLogs(res);
-        return;
-      }
-    } catch {}
-    const filteredMock = MOCK_LOGS.filter(
-      (item) => item.sessionId === sessionId,
-    );
-    setLogs(filteredMock.length > 0 ? filteredMock : MOCK_LOGS);
+      setLogs(Array.isArray(res) ? res : []);
+    } catch {
+      setLogs([]);
+    }
   }, []);
 
   const loadSessionsData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    let loadedSessions: WorkoutSession[] = [];
-
-    if (activePlanId) {
-      try {
-        const res = await getSessionsByPlan(activePlanId);
-        if (Array.isArray(res) && res.length > 0) {
-          loadedSessions = res;
-        }
-      } catch {
-        // Lỗi gọi server, sẽ xử lý bằng fallback bên dưới
+    try {
+      // Tổng hợp toàn bộ lộ trình của user để không mất lịch sử khi đổi mục tiêu
+      let planIds: string[] = [];
+      if (profile?._id) {
+        const allPlans = await getPlansByProfile(profile._id).catch(() => []);
+        planIds = allPlans.map((p) => p._id);
       }
-    }
+      if (activePlanId && !planIds.includes(activePlanId)) {
+        planIds.push(activePlanId);
+      }
 
-    // Nếu API rỗng hoặc lỗi, fallback về mockSessions
-    if (loadedSessions.length === 0) {
-      loadedSessions = mockSessions.filter(
-        (s) => !activePlanId || s.planId === activePlanId,
+      if (planIds.length === 0) {
+        setSessions([]);
+        return;
+      }
+
+      const sessionGroups = await Promise.all(
+        planIds.map((id) => getSessionsByPlan(id).catch(() => [])),
       );
-      if (loadedSessions.length === 0) {
-        loadedSessions = mockSessions;
+
+      const uniqueMap = new Map<string, WorkoutSession>();
+      sessionGroups.flat().forEach((s) => {
+        if (s.status === "completed" || s._id === activeSessionId) {
+          uniqueMap.set(s._id, s);
+        }
+      });
+
+      const completed = Array.from(uniqueMap.values()).sort(
+        (a, b) =>
+          Date.parse(b.completedDate || b.scheduledDate) -
+          Date.parse(a.completedDate || a.scheduledDate),
+      );
+
+      setSessions(completed);
+
+      const targetId = activeSessionId ?? completed[0]?._id;
+      if (targetId) {
+        setOpenId(targetId);
+        await loadLogsForSession(targetId);
+      } else {
+        setOpenId(null);
+        setLogs([]);
       }
+    } catch {
+      setError("Không tải được nhật ký buổi tập.");
+      setSessions([]);
+    } finally {
+      setLoading(false);
     }
-
-    // Nếu có sessionId vừa tập xong mà chưa nằm trong danh sách, chèn lên đầu
-    if (
-      activeSessionId &&
-      !loadedSessions.some((s) => s._id === activeSessionId)
-    ) {
-      loadedSessions = [
-        {
-          _id: activeSessionId,
-          planId: activePlanId ?? mockPlans[0]._id,
-          name: "Buổi tập vừa hoàn thành",
-          scheduledDate: new Date().toISOString(),
-          status: "completed",
-        },
-        ...loadedSessions,
-      ];
-    }
-
-    setSessions(loadedSessions);
-    setLoading(false);
-
-    // Tự động mở chi tiết buổi tập vừa hoàn thành (nếu có)
-    const targetId = activeSessionId ?? loadedSessions[0]?._id;
-    if (targetId) {
-      setOpenId(targetId);
-      loadLogsForSession(targetId);
-    }
-  }, [activePlanId, activeSessionId, loadLogsForSession]);
+  }, [profile?._id, activePlanId, activeSessionId, loadLogsForSession]);
 
   useEffect(() => {
-    loadSessionsData();
+    void loadSessionsData();
   }, [loadSessionsData]);
 
   const onRefresh = useCallback(async () => {
@@ -199,7 +190,9 @@ export default function HistoryScreen({
             backgroundColor={
               activeSubTab === "analytics" ? "$cardBg" : "transparent"
             }
-            shadowColor={activeSubTab === "analytics" ? "#000000" : "transparent"}
+            shadowColor={
+              activeSubTab === "analytics" ? "#000000" : "transparent"
+            }
             shadowOffset={{ width: 0, height: 2 }}
             shadowOpacity={activeSubTab === "analytics" ? 0.04 : 0}
             shadowRadius={8}
@@ -207,7 +200,9 @@ export default function HistoryScreen({
             alignItems="center"
             onPress={() => setActiveSubTab("analytics")}>
             <BaseText
-              color={activeSubTab === "analytics" ? "$textPrimary" : "$textSecondary"}
+              color={
+                activeSubTab === "analytics" ? "$textPrimary" : "$textSecondary"
+              }
               fontWeight={activeSubTab === "analytics" ? "700" : "500"}
               fontSize={14}>
               Thống kê tiến độ
@@ -229,7 +224,9 @@ export default function HistoryScreen({
             alignItems="center"
             onPress={() => setActiveSubTab("history")}>
             <BaseText
-              color={activeSubTab === "history" ? "$textPrimary" : "$textSecondary"}
+              color={
+                activeSubTab === "history" ? "$textPrimary" : "$textSecondary"
+              }
               fontWeight={activeSubTab === "history" ? "700" : "500"}
               fontSize={14}>
               Nhật ký buổi tập
@@ -288,7 +285,7 @@ export default function HistoryScreen({
               fontWeight="800"
               marginBottom="$2"
               color="$textPrimary">
-              Danh sách buổi tập
+              Các buổi đã hoàn thành
             </BaseText>
 
             {loading && (
@@ -300,21 +297,29 @@ export default function HistoryScreen({
               </BaseText>
             )}
             {!loading && sessions.length === 0 && (
-              <BaseText color="$textSecondary">Chưa có buổi tập nào.</BaseText>
+              <Card>
+                <BaseText color="$textSecondary">
+                  Chưa có buổi tập nào được hoàn thành.
+                </BaseText>
+              </Card>
             )}
 
             {sessions.map((s, index) => {
               const id = String(s._id ?? index);
               const isOpen = openId === id;
+              const displayDate = s.completedDate || s.scheduledDate;
               return (
                 <YStack key={id} onPress={() => toggleSession(id)}>
                   <Card gap="$2" marginBottom="$3">
-                    <BaseText fontWeight="700" fontSize={16} color="$textPrimary">
+                    <BaseText
+                      fontWeight="700"
+                      fontSize={16}
+                      color="$textPrimary">
                       {s.name ?? `Buổi tập ${index + 1}`}
                     </BaseText>
                     <BaseText color="$textSecondary" fontSize={13}>
-                      {s.scheduledDate
-                        ? new Date(s.scheduledDate).toLocaleDateString("vi-VN")
+                      {displayDate
+                        ? `Hoàn thành: ${new Date(displayDate).toLocaleDateString("vi-VN")}`
                         : ""}
                     </BaseText>
 
@@ -387,9 +392,17 @@ export default function HistoryScreen({
         activeTabId="history"
         onTabChange={(tabId) => {
           if (tabId === "home") {
-            navigation.popTo("Home", { tab: "home" });
+            if (navigation.canGoBack()) {
+              navigation.popTo("Home", { tab: "home" });
+            } else {
+              navigation.navigate("Home", { tab: "home" });
+            }
           } else if (tabId === "plan") {
-            navigation.popTo("Home", { tab: "plan" });
+            if (navigation.canGoBack()) {
+              navigation.popTo("Home", { tab: "plan" });
+            } else {
+              navigation.navigate("Home", { tab: "plan" });
+            }
           }
         }}
       />

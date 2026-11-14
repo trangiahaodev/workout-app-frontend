@@ -3,14 +3,11 @@ import {
   ProgressAnalyticsData,
   VolumeHistoryPoint,
   WorkoutLog,
+  WorkoutPlan,
   WorkoutSession,
 } from "../types";
 import { getLogsBySession, getSessionsByPlan } from "./logService";
-import {
-  MOCK_LOGS,
-  mockPlans,
-  mockSessions,
-} from "../components/home/mockData";
+import { getPlansByProfile } from "./planService";
 
 /**
  * Sanitizer đảm bảo giá trị số không âm, không bị NaN hoặc null/undefined
@@ -159,56 +156,73 @@ export function calculateFrequencyAndCompletion(sessions: WorkoutSession[]) {
 }
 
 /**
- * Service tích hợp: Fetch sessions + batch logs song song và tổng hợp dữ liệu thống kê
+ * Tổng hợp thống kê tiến độ xuyên suốt tất cả lộ trình của người dùng (profileId)
  */
 export async function fetchPlanAnalytics(
   planId?: string,
+  profileId?: string,
 ): Promise<ProgressAnalyticsData> {
-  const targetPlanId = planId || mockPlans[0]?._id;
-
-  let loadedSessions: WorkoutSession[] = [];
-  if (targetPlanId) {
-    try {
-      const res = await getSessionsByPlan(targetPlanId);
-      if (Array.isArray(res) && res.length > 0) {
-        loadedSessions = res;
-      }
-    } catch {
-      // API offline hoặc lỗi mạng, fallback bên dưới
-    }
+  let plans: WorkoutPlan[] = [];
+  if (profileId) {
+    plans = await getPlansByProfile(profileId).catch(() => []);
   }
 
-  // Fallback an toàn về mockSessions nếu API rỗng
-  if (loadedSessions.length === 0) {
-    loadedSessions = mockSessions.filter(
-      (s) => !targetPlanId || s.planId === targetPlanId,
-    );
-    if (loadedSessions.length === 0) {
-      loadedSessions = mockSessions;
-    }
+  const planIds = new Set<string>(plans.map((p) => p._id));
+  if (planId) planIds.add(planId);
+
+  if (planIds.size === 0) {
+    return {
+      totalVolumeKg: 0,
+      completedSessionsCount: 0,
+      totalSessionsCount: 0,
+      completionRate: 0,
+      weeklyFrequency: 0,
+      muscleDistribution: [],
+      volumeHistory: [],
+      dominantMuscleGroup: undefined,
+    };
   }
 
-  // Sắp xếp các buổi tập theo ngày
-  loadedSessions.sort(
-    (a, b) =>
-      new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime(),
+  const sessionGroups = await Promise.all(
+    Array.from(planIds).map((id) => getSessionsByPlan(id).catch(() => [])),
   );
 
-  // Batch fetch logs của các buổi tập bằng Promise.allSettled
+  const uniqueSessions = new Map<string, WorkoutSession>();
+  sessionGroups.flat().forEach((s) => {
+    if (s?._id) uniqueSessions.set(s._id, s);
+  });
+
+  const allSessions = Array.from(uniqueSessions.values()).sort(
+    (a, b) =>
+      new Date(a.completedDate || a.scheduledDate).getTime() -
+      new Date(b.completedDate || b.scheduledDate).getTime(),
+  );
+
+  const activePlan =
+    plans.find((p) => p.status === "active") ??
+    (planId ? plans.find((p) => p._id === planId) : undefined);
+
+  // Giữ lịch sử các buổi đã hoàn thành ở lộ trình cũ + toàn bộ buổi của lộ trình hiện tại
+  const scopedSessions = allSessions.filter(
+    (s) =>
+      s.status === "completed" ||
+      Boolean(s.completedDate) ||
+      (activePlan ? s.planId === activePlan._id : s.planId === planId),
+  );
+
+  const completedOrActiveSessions = scopedSessions;
+
   const sessionLogResults = await Promise.allSettled(
-    loadedSessions.map(async (session) => {
+    completedOrActiveSessions.map(async (session) => {
       try {
         const res = await getLogsBySession(session._id);
-        if (Array.isArray(res) && res.length > 0) {
-          return { sessionId: session._id, logs: res };
-        }
+        return {
+          sessionId: session._id,
+          logs: Array.isArray(res) ? res : [],
+        };
       } catch {
-        // Tiếp tục fallback bên dưới
+        return { sessionId: session._id, logs: [] };
       }
-
-      // Fallback về MOCK_LOGS
-      const matched = MOCK_LOGS.filter((l) => l.sessionId === session._id);
-      return { sessionId: session._id, logs: matched };
     }),
   );
 
@@ -222,15 +236,13 @@ export async function fetchPlanAnalytics(
     }
   }
 
-  // Xây dựng volume history theo từng buổi
   const volumeHistory: VolumeHistoryPoint[] = [];
   let totalVolumeAccumulated = 0;
 
-  for (const session of loadedSessions) {
+  for (const session of completedOrActiveSessions) {
     const sessionLogs = logsBySession[session._id] || [];
     const stats = calculateSessionVolume(sessionLogs);
 
-    // Chỉ đưa vào history nếu buổi tập đã hoàn thành hoặc có volume > 0
     if (
       session.status === "completed" ||
       stats.totalVolumeKg > 0 ||
@@ -252,7 +264,7 @@ export async function fetchPlanAnalytics(
     completedSessionsCount,
     completionRate,
     weeklyFrequency,
-  } = calculateFrequencyAndCompletion(loadedSessions);
+  } = calculateFrequencyAndCompletion(completedOrActiveSessions);
 
   const muscleDistribution = aggregateMuscleStats(allLogs);
   const dominantMuscleGroup =

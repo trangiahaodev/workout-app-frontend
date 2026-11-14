@@ -18,7 +18,6 @@ import {
 } from "../components/plan/planUi";
 import { getPlanSessions, updatePlanStatus } from "../services/planService";
 import { startWorkout } from "../store/slices/workoutSlice";
-import { DEFAULT_SESSION_ID } from "../components/home/mockData";
 import {
   PlanDetailScreenNavigationProp,
   PlanDetailScreenRouteProp,
@@ -39,7 +38,13 @@ export default function PlanDetailScreen() {
     route.params.coverUri || route.params.plan.coverImage || DEFAULT_COVER;
 
   const [plan, setPlan] = useState<WorkoutPlan>(route.params.plan);
-  const [sessions, setSessions] = useState<WorkoutSession[]>(initialSessions);
+  const [sessions, setSessions] = useState<WorkoutSession[]>(() =>
+    initialSessions
+      .slice()
+      .sort(
+        (a, b) => Date.parse(a.scheduledDate) - Date.parse(b.scheduledDate),
+      ),
+  );
   const [loading, setLoading] = useState(initialSessions.length === 0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -49,11 +54,12 @@ export default function PlanDetailScreen() {
     try {
       const list = await getPlanSessions(plan._id);
       const sourceList = list.length > 0 ? list : initialSessions;
+      // Sắp xếp tăng dần từ Tuần 1 -> Tuần 4
       setSessions(
         sourceList
           .slice()
           .sort(
-            (a, b) => Date.parse(b.scheduledDate) - Date.parse(a.scheduledDate),
+            (a, b) => Date.parse(a.scheduledDate) - Date.parse(b.scheduledDate),
           ),
       );
     } catch {
@@ -63,10 +69,9 @@ export default function PlanDetailScreen() {
     }
   }, [plan._id, initialSessions]);
 
-  // Tải lại danh sách buổi tập mỗi khi màn này được mở lại
   useFocusEffect(
     useCallback(() => {
-      loadSessions();
+      void loadSessions();
     }, [loadSessions]),
   );
 
@@ -83,10 +88,14 @@ export default function PlanDetailScreen() {
     }
   };
 
+  const nextPendingSession = sessions.find((s) => s.status === "pending");
+
   const handleStartWorkout = (targetSessionId?: string) => {
-    const nextPending = sessions.find((s) => s.status === "pending");
-    const resolvedSessionId =
-      targetSessionId ?? nextPending?._id ?? DEFAULT_SESSION_ID;
+    const resolvedSessionId = targetSessionId ?? nextPendingSession?._id;
+    if (!resolvedSessionId) {
+      setMessage("Tất cả các buổi trong lộ trình này đã hoàn thành.");
+      return;
+    }
 
     dispatch(startWorkout({ planId: plan._id, sessionId: resolvedSessionId }));
     navigation.navigate("WorkoutSession", {
@@ -102,7 +111,7 @@ export default function PlanDetailScreen() {
   return (
     <YStack flex={1} backgroundColor="$background">
       <TopHeader
-        title="Chi tiết chương trình"
+        title="Chi tiết lộ trình"
         subtitle={plan.name}
         onBack={() => navigation.goBack()}
       />
@@ -131,8 +140,7 @@ export default function PlanDetailScreen() {
                 color={PLAN_STATUS_COLOR[plan.status] ?? "#8E8E93"}
               />
               <BaseText fontSize={11} fontWeight="600" color="$textSecondary">
-                {plan.generatedByAI ? "AI tạo" : "Tự tạo"}
-                {plan.goal ? ` • ${plan.goal}` : ""}
+                {plan.goal ? `Mục tiêu: ${plan.goal}` : "Lộ trình cá nhân"}
               </BaseText>
             </XStack>
             <BaseText
@@ -160,19 +168,21 @@ export default function PlanDetailScreen() {
         <YStack gap="$2" marginBottom="$4">
           {plan.status === "active" ? (
             <>
+              {nextPendingSession ? (
+                <PrimaryButton
+                  title="Bắt đầu buổi tập tiếp theo"
+                  disabled={busy}
+                  onPress={() => handleStartWorkout()}
+                />
+              ) : null}
               <PrimaryButton
-                title="Bắt đầu buổi tập"
-                disabled={busy}
-                onPress={() => handleStartWorkout()}
-              />
-              <PrimaryButton
-                title="Hoàn thành chương trình"
+                title="Hoàn thành lộ trình"
                 variant="secondary"
                 disabled={busy}
                 onPress={() => changeStatus("completed")}
               />
               <PrimaryButton
-                title="Hủy chương trình"
+                title="Hủy lộ trình"
                 variant="secondary"
                 disabled={busy}
                 onPress={() => changeStatus("abandoned")}
@@ -180,7 +190,7 @@ export default function PlanDetailScreen() {
             </>
           ) : (
             <PrimaryButton
-              title="Kích hoạt chương trình"
+              title="Áp dụng lộ trình này"
               disabled={busy}
               onPress={() => changeStatus("active")}
             />
@@ -192,7 +202,7 @@ export default function PlanDetailScreen() {
           fontWeight="800"
           color="$textPrimary"
           marginBottom="$3">
-          Các buổi tập
+          Lịch trình các buổi tập
         </BaseText>
 
         {loading ? (
@@ -200,7 +210,7 @@ export default function PlanDetailScreen() {
         ) : sessions.length === 0 ? (
           <Card>
             <BaseText color="$textSecondary">
-              Chưa có buổi tập nào trong chương trình này.
+              Chưa có buổi tập nào trong lộ trình này.
             </BaseText>
           </Card>
         ) : (

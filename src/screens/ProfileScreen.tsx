@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Alert, Modal, Platform } from "react-native";
 import {
   CommonActions,
   NavigationAction,
@@ -19,6 +19,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useProfile } from "../hooks/useProfile";
 import { ProfileScreenNavigationProp } from "../navigation/types";
 import { profileErrorMessage } from "../services/profileService";
+import { generateRoadmap } from "../services/planService";
 import { GoalType, LevelType, Profile, UpsertProfilePayload } from "../types";
 
 const GOALS: GoalType[] = [
@@ -70,7 +71,6 @@ function LogoutButton({ disabled = false }: { disabled?: boolean }) {
   async function doLogout() {
     setBusy(true);
     try {
-      // AuthGate tự chuyển về màn Đăng nhập sau khi xoá token.
       await signOut();
     } catch {
       setBusy(false);
@@ -120,10 +120,10 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
     trainingDaysPerWeek: profile?.trainingDaysPerWeek ?? 3,
   }));
   const [saving, setSaving] = useState(false);
+  const [settingUpRoadmap, setSettingUpRoadmap] = useState(false);
+  const [navigatingAway, setNavigatingAway] = useState(false);
   const savingRef = useRef(false);
   const [edited, setEdited] = useState(false);
-  const [redirectHome, setRedirectHome] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<NavigationAction | null>(
     null,
@@ -138,9 +138,30 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
       draft.trainingDaysPerWeek !== profile.trainingDaysPerWeek
     : edited;
 
-  usePreventRemove((dirty || saving) && !discardAction, ({ data }) => {
-    if (!savingRef.current) setPendingAction(data.action);
-  });
+  usePreventRemove(
+    (dirty || saving || settingUpRoadmap) && !discardAction && !navigatingAway,
+    ({ data }) => {
+      if (!savingRef.current && !navigatingAway) {
+        setPendingAction(data.action);
+      }
+    },
+  );
+
+  // Thực hiện chuyển trang SAU khi usePreventRemove đã re-render và gỡ chặn
+  useEffect(() => {
+    if (!navigatingAway) return;
+    savingRef.current = false;
+    if (navigation.canGoBack()) {
+      navigation.dispatch(StackActions.popTo("Home", { tab: "home" }));
+    } else {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "Home", params: { tab: "home" } }],
+        }),
+      );
+    }
+  }, [navigatingAway, navigation]);
 
   useEffect(() => {
     if (discardAction) {
@@ -153,26 +174,12 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
     if (pendingAction) scroll.current?.scrollTo({ y: 0, animated: true });
   }, [pendingAction]);
 
-  // Sau khi tạo hồ sơ lần đầu thành công và đã tắt trạng thái saving/dirty → chuyển về Home
-  useEffect(() => {
-    if (redirectHome && !saving && !dirty) {
-      setRedirectHome(false);
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "Home", params: { tab: "home" } }],
-        }),
-      );
-    }
-  }, [redirectHome, saving, dirty, navigation]);
-
   function change<K extends keyof UpsertProfilePayload>(
     key: K,
     value: UpsertProfilePayload[K],
   ) {
     setDraft((current) => ({ ...current, [key]: value }));
     setEdited(true);
-    setMessage(null);
     setError(null);
   }
 
@@ -186,12 +193,12 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
       setError("Chọn từ 1 đến 7 buổi tập mỗi tuần.");
       return;
     }
-    const isInitialCreate = !profile;
+
     savingRef.current = true;
     setSaving(true);
     setError(null);
-    setMessage(null);
     setPendingAction(null);
+
     try {
       const result = await save(draft);
       setDraft({
@@ -201,20 +208,60 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
         trainingDaysPerWeek: result.trainingDaysPerWeek,
       });
       setEdited(false);
-      setMessage("Đã lưu hồ sơ thành công.");
-      if (isInitialCreate) {
-        setRedirectHome(true);
-      }
-    } catch (err) {
-      setError(profileErrorMessage(err));
-    } finally {
-      savingRef.current = false;
+
+      setSettingUpRoadmap(true);
+      await generateRoadmap({
+        profileId: result._id,
+        goal: result.goal,
+        level: result.level,
+        trainingDaysPerWeek: result.trainingDaysPerWeek,
+      });
+
+      setSettingUpRoadmap(false);
       setSaving(false);
+      setNavigatingAway(true);
+    } catch (err) {
+      savingRef.current = false;
+      setSettingUpRoadmap(false);
+      setSaving(false);
+      setError(profileErrorMessage(err));
     }
   }
 
   return (
     <YStack flex={1}>
+      <Modal
+        visible={settingUpRoadmap}
+        transparent
+        animationType="fade"
+        statusBarTranslucent>
+        <YStack
+          flex={1}
+          backgroundColor="rgba(0,0,0,0.45)"
+          alignItems="center"
+          justifyContent="center"
+          padding="$5">
+          <Card
+            width="100%"
+            maxWidth={340}
+            padding="$5"
+            alignItems="center"
+            gap="$3">
+            <Spinner size="large" color="$primary" />
+            <BaseText fontSize={17} fontWeight="700" textAlign="center">
+              Đang thiết lập lộ trình tập luyện...
+            </BaseText>
+            <BaseText
+              variant="caption"
+              color="$textSecondary"
+              textAlign="center">
+              Hệ thống đang phân bổ lịch tập 4 tuần phù hợp với mục tiêu{" "}
+              {draft.goal} của bạn.
+            </BaseText>
+          </Card>
+        </YStack>
+      </Modal>
+
       <ScrollView ref={scroll} flex={1} showsVerticalScrollIndicator={false}>
         <YStack
           padding="$4"
@@ -253,8 +300,8 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
             </BaseText>
             <BaseText color="$textSecondary">
               {profile
-                ? "Điều chỉnh mục tiêu và nhịp tập phù hợp với bạn."
-                : "Chọn mục tiêu, trình độ và số buổi để thiết lập hồ sơ đầu tiên."}
+                ? "Cập nhật mục tiêu để hệ thống thiết lập lại lộ trình tập luyện phù hợp."
+                : "Chọn mục tiêu, trình độ và số buổi để thiết lập lộ trình đầu tiên."}
             </BaseText>
           </YStack>
           <Card gap="$3" marginBottom={0}>
@@ -312,18 +359,13 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
             </XStack>
           </Card>
           {error && <BaseText accessibilityRole="alert">{error}</BaseText>}
-          {message && (
-            <BaseText accessibilityRole="alert" color="$primary">
-              {message}
-            </BaseText>
-          )}
           <PrimaryButton
             title={
               saving
                 ? "Đang lưu hồ sơ…"
                 : profile
-                  ? "Lưu thay đổi"
-                  : "Tạo hồ sơ"
+                  ? "Cập nhật lộ trình"
+                  : "Thiết lập lộ trình"
             }
             accessibilityRole="button"
             disabled={saving || (!!profile && !dirty)}

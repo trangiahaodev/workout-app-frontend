@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ProgressAnalyticsData } from "../types";
 import { fetchPlanAnalytics } from "../services/analyticsService";
 
-export function useProgressAnalytics(planId?: string) {
+export function useProgressAnalytics(planId?: string, profileId?: string) {
   const [data, setData] = useState<ProgressAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -18,7 +18,7 @@ export function useProgressAnalytics(planId?: string) {
         }
         setError(null);
 
-        const result = await fetchPlanAnalytics(planId);
+        const result = await fetchPlanAnalytics(planId, profileId);
         setData(result);
       } catch (err: any) {
         setError(err?.message || "Không thể tải dữ liệu thống kê.");
@@ -27,11 +27,11 @@ export function useProgressAnalytics(planId?: string) {
         setIsRefreshing(false);
       }
     },
-    [planId],
+    [planId, profileId],
   );
 
   useEffect(() => {
-    loadAnalytics();
+    void loadAnalytics();
   }, [loadAnalytics]);
 
   const refetch = useCallback(async () => {
