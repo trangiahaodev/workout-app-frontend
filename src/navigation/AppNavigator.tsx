@@ -9,12 +9,16 @@ import PlanDetailScreen from "../screens/PlanDetailScreen";
 import { ProfileProvider } from "../hooks/useProfile";
 import { RootStackParamList } from "./types";
 import ExerciseDetailScreen from "../screens/ExerciseDetailScreen";
+import { AuthProvider } from "../hooks/useAuth";
+import { AuthGate } from "./AuthGate";
+import { ProfileGate } from "./ProfileGate";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function AppNavigator() {
   return (
-    <ProfileProvider>
+    // AuthGate: chưa đăng nhập → Login/Register. ProfileGate: chờ profile, 404 → Profile.
+    <AuthProvider><AuthGate><ProfileProvider><ProfileGate>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
@@ -29,7 +33,7 @@ export function AppNavigator() {
         <Stack.Screen name="PlanDetail" component={PlanDetailScreen} />
         <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
       </Stack.Navigator>
-    </ProfileProvider>
+    </ProfileGate></ProfileProvider></AuthGate></AuthProvider>
   );
 }
 

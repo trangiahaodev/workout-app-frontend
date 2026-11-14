@@ -1,7 +1,7 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from "react";
-import { DEMO_USER_ID } from "../config/demoUser";
+import { useAuth } from "./useAuth";
 import { getProfile, profileErrorMessage, upsertProfile } from "../services/profileService";
 import { Profile, UpsertProfilePayload } from "../types";
 
@@ -16,6 +16,7 @@ interface ProfileContextValue {
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
+  const { userId } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,17 +24,22 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     const current = ++request.current;
+    if (!userId) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const result = await getProfile(DEMO_USER_ID);
+      const result = await getProfile(userId);
       if (current === request.current) setProfile(result);
     } catch (err) {
       if (current === request.current) setError(profileErrorMessage(err));
     } finally {
       if (current === request.current) setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void reload();
