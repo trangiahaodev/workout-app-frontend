@@ -19,6 +19,7 @@
     "@tamagui/core": "^2.7.7",
     "axios": "^1.20.0",
     "expo": "~54.0.36",
+    "expo-image-picker": "~17.0.11",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
