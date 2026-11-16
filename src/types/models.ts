@@ -8,6 +8,7 @@ export interface Profile {
   goal: GoalType;
   level: LevelType;
   trainingDaysPerWeek: number;
+  customNote?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -18,6 +19,7 @@ export interface UpsertProfilePayload {
   goal: GoalType;
   level: LevelType;
   trainingDaysPerWeek: number;
+  customNote?: string;
 }
 
 // 2. EXERCISE (Khớp models/Exercise.js & exerciseController.js)
@@ -81,6 +83,8 @@ export interface WorkoutPlan {
   goal?: GoalType;
   coverImage?: string;
   generatedByAI: boolean;
+  durationWeeks?: number;
+  aiNote?: string;
   status: PlanStatus;
   startDate?: string;
   endDate?: string;
@@ -194,4 +198,39 @@ export interface ProgressAnalyticsData {
   muscleDistribution: MuscleDistribution[];
   volumeHistory: VolumeHistoryPoint[];
   dominantMuscleGroup?: string;
+}
+
+// 7. AI INSIGHT & AI COACH CHAT
+export interface AIInsightContent {
+  headline: string;
+  trendAnalysis: string;
+  imbalanceWarning: string;
+  nextAction: string;
+}
+
+export interface AIInsightMetrics {
+  goal: string;
+  level: string;
+  totalCompletedSessions: number;
+  totalScheduledSessions: number;
+  completionRatePercent: number;
+  totalVolumeKg: number;
+  currentWeekVolumeKg: number;
+  previousWeekVolumeKg: number;
+  volumeChangePercent: number;
+  avgSessionsPerWeek: number;
+  muscleDistribution: Record<string, number>;
+}
+
+export interface AIInsightResponse {
+  metrics: AIInsightMetrics;
+  insight: AIInsightContent;
+}
+
+export interface ChatMessageItem {
+  _id: string;
+  userId: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt?: string;
 }

@@ -158,6 +158,22 @@ export default function PlanDetailScreen() {
             </BaseText>
           </YStack>
         </YStack>
+        {plan.aiNote ? (
+          <Card
+            gap="$1.5"
+            marginBottom="$3"
+            backgroundColor="$surfaceSubtle"
+            borderColor="$borderColor">
+            <XStack alignItems="center" gap="$1.5">
+              <BaseText fontSize={13} fontWeight="800" color="$textPrimary">
+                Nhận xét từ AI Coach ({plan.durationWeeks ?? 4} tuần)
+              </BaseText>
+            </XStack>
+            <BaseText fontSize={13} color="$textSecondary" lineHeight={19}>
+              {plan.aiNote}
+            </BaseText>
+          </Card>
+        ) : null}
 
         {message ? (
           <BaseText marginBottom="$3" fontSize={13} color={ERROR_COLOR}>

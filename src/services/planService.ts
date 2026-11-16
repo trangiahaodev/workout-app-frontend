@@ -14,6 +14,7 @@ export interface GenerateRoadmapPayload {
   goal: GoalType;
   level: LevelType;
   trainingDaysPerWeek: number;
+  customNote?: string;
 }
 
 // axiosClient đã trả về response.data; ở đây chấp nhận cả dạng { data: ... }
@@ -65,5 +66,5 @@ export const getPlanSessions = async (
 export async function generateRoadmap(
   payload: GenerateRoadmapPayload,
 ): Promise<{ plan: WorkoutPlan; sessions: WorkoutSession[] }> {
-  return axiosClient.post("/plans/generate", payload);
+  return axiosClient.post("/plans/generate", payload, { timeout: 30000 });
 }

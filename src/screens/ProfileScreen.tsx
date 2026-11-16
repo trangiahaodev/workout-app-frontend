@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Modal, Platform } from "react-native";
+import { Alert, Modal, Platform, TextInput } from "react-native";
 import {
   CommonActions,
   NavigationAction,
@@ -118,6 +118,7 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
     goal: profile?.goal ?? "Tăng cơ",
     level: profile?.level ?? "Beginner",
     trainingDaysPerWeek: profile?.trainingDaysPerWeek ?? 3,
+    customNote: profile?.customNote ?? "",
   }));
   const [saving, setSaving] = useState(false);
   const [settingUpRoadmap, setSettingUpRoadmap] = useState(false);
@@ -135,7 +136,8 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
   const dirty = profile
     ? draft.goal !== profile.goal ||
       draft.level !== profile.level ||
-      draft.trainingDaysPerWeek !== profile.trainingDaysPerWeek
+      draft.trainingDaysPerWeek !== profile.trainingDaysPerWeek ||
+      (draft.customNote ?? "") !== (profile.customNote ?? "")
     : edited;
 
   usePreventRemove(
@@ -215,6 +217,7 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
         goal: result.goal,
         level: result.level,
         trainingDaysPerWeek: result.trainingDaysPerWeek,
+        customNote: draft.customNote,
       });
 
       setSettingUpRoadmap(false);
@@ -255,8 +258,8 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
               variant="caption"
               color="$textSecondary"
               textAlign="center">
-              Hệ thống đang phân bổ lịch tập 4 tuần phù hợp với mục tiêu{" "}
-              {draft.goal} của bạn.
+              AI đang thiết kế giáo án cá nhân hóa phù hợp với mục tiêu và ghi
+              chú của bạn.
             </BaseText>
           </Card>
         </YStack>
@@ -358,6 +361,37 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
               ))}
             </XStack>
           </Card>
+          <Card gap="$2.5" marginBottom={0}>
+            <BaseText fontWeight="700" fontSize={17}>
+              Yêu cầu riêng cho AI (Tùy chọn)
+            </BaseText>
+            <BaseText fontSize={13} color="$textSecondary">
+              Mô tả dụng cụ sẵn có, nhóm cơ muốn ưu tiên hoặc lưu ý thể trạng để
+              AI thiết kế giáo án sát nhất.
+            </BaseText>
+            <TextInput
+              value={draft.customNote ?? ""}
+              onChangeText={(text) => change("customNote", text)}
+              placeholder="VD: Muốn ưu tiên lưng và vai..."
+              placeholderTextColor="#8E8E93"
+              multiline
+              numberOfLines={3}
+              editable={!saving}
+              style={{
+                minHeight: 82,
+                backgroundColor: "#F5F5F7",
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: "#E5E5EA",
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: 14,
+                color: "#111111",
+                textAlignVertical: "top",
+              }}
+            />
+          </Card>
+
           {error && <BaseText accessibilityRole="alert">{error}</BaseText>}
           <PrimaryButton
             title={

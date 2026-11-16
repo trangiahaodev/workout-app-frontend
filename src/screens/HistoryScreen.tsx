@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { RefreshControl } from "react-native";
+import { RefreshControl, Pressable } from "react-native";
 import { YStack, XStack, ScrollView, Spinner } from "tamagui";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
   Card,
@@ -15,9 +16,10 @@ import {
 } from "../components";
 import { getSessionsByPlan, getLogsBySession } from "../services/logService";
 import { getPlansByProfile } from "../services/planService";
+import { fetchProgressInsights } from "../services/aiService";
 import { useProfile } from "../hooks/useProfile";
 import { useProgressAnalytics } from "../hooks/useProgressAnalytics";
-import { WorkoutSession, WorkoutLog } from "../types";
+import { WorkoutSession, WorkoutLog, AIInsightResponse } from "../types";
 import {
   HistoryScreenNavigationProp,
   HistoryScreenRouteProp,
@@ -48,6 +50,31 @@ export default function HistoryScreen({
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
+
+  const [insightOpen, setInsightOpen] = useState(false);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightData, setInsightData] = useState<AIInsightResponse | null>(
+    null,
+  );
+
+  const handleToggleInsight = async () => {
+    const nextState = !insightOpen;
+    setInsightOpen(nextState);
+    if (nextState && !insightData && !insightLoading) {
+      setInsightLoading(true);
+      try {
+        const res = await fetchProgressInsights({
+          profileId: profile?._id,
+          userId: profile?.userId,
+        });
+        setInsightData(res);
+      } catch {
+        // Giữ trạng thái an toàn nếu lỗi mạng
+      } finally {
+        setInsightLoading(false);
+      }
+    }
+  };
 
   const {
     data: analyticsData,
@@ -125,6 +152,8 @@ export default function HistoryScreen({
   }, [loadSessionsData]);
 
   const onRefresh = useCallback(async () => {
+    setInsightOpen(false);
+    setInsightData(null);
     await Promise.all([loadSessionsData(), refetchAnalytics()]);
   }, [loadSessionsData, refetchAnalytics]);
 
@@ -263,6 +292,113 @@ export default function HistoryScreen({
                   />
                 ) : (
                   <>
+                    <Card gap="$2.5" marginBottom="$3">
+                      <Pressable onPress={() => void handleToggleInsight()}>
+                        <XStack
+                          alignItems="center"
+                          justifyContent="space-between">
+                          <XStack alignItems="center" gap="$2" flex={1}>
+                            <YStack
+                              width={32}
+                              height={32}
+                              borderRadius={16}
+                              backgroundColor="#111111"
+                              alignItems="center"
+                              justifyContent="center">
+                              <Ionicons
+                                name="sparkles"
+                                size={16}
+                                color="#FFFFFF"
+                              />
+                            </YStack>
+                            <YStack flex={1}>
+                              <BaseText
+                                fontSize={15}
+                                fontWeight="800"
+                                color="$textPrimary">
+                                AI Insight · Đánh giá tiến độ
+                              </BaseText>
+                              <BaseText fontSize={12} color="$textSecondary">
+                                {insightOpen
+                                  ? "Phân tích xu hướng & khuyến nghị buổi tới"
+                                  : "Chạm để AI giải mã ý nghĩa các chỉ số của bạn"}
+                              </BaseText>
+                            </YStack>
+                          </XStack>
+                          <Ionicons
+                            name={insightOpen ? "chevron-up" : "chevron-down"}
+                            size={20}
+                            color="#111111"
+                          />
+                        </XStack>
+                      </Pressable>
+
+                      {insightOpen && (
+                        <YStack
+                          gap="$2.5"
+                          paddingTop="$2.5"
+                          borderTopWidth={1}
+                          borderColor="$borderColor">
+                          {insightLoading ? (
+                            <XStack
+                              alignItems="center"
+                              gap="$2"
+                              paddingVertical="$2">
+                              <Spinner size="small" color="$textPrimary" />
+                              <BaseText fontSize={13} color="$textSecondary">
+                                AI đang đối chiếu dữ liệu quá khứ...
+                              </BaseText>
+                            </XStack>
+                          ) : insightData ? (
+                            <>
+                              <YStack
+                                backgroundColor="$surfaceSubtle"
+                                padding="$2.5"
+                                borderRadius={10}>
+                                <BaseText
+                                  fontSize={14}
+                                  fontWeight="700"
+                                  color="$textPrimary">
+                                  📈 {insightData.insight.headline}
+                                </BaseText>
+                              </YStack>
+                              <BaseText
+                                fontSize={13}
+                                color="$textPrimary"
+                                lineHeight={19}>
+                                <BaseText fontWeight="700">
+                                  • Xu hướng:{" "}
+                                </BaseText>
+                                {insightData.insight.trendAnalysis}
+                              </BaseText>
+                              <BaseText
+                                fontSize={13}
+                                color="$textPrimary"
+                                lineHeight={19}>
+                                <BaseText fontWeight="700">
+                                  • Cân bằng nhóm cơ:{" "}
+                                </BaseText>
+                                {insightData.insight.imbalanceWarning}
+                              </BaseText>
+                              <BaseText
+                                fontSize={13}
+                                color="$textPrimary"
+                                lineHeight={19}>
+                                <BaseText fontWeight="700">
+                                  • Gợi ý buổi tới:{" "}
+                                </BaseText>
+                                {insightData.insight.nextAction}
+                              </BaseText>
+                            </>
+                          ) : (
+                            <BaseText fontSize={13} color="$textSecondary">
+                              Chưa thể phân tích dữ liệu lúc này. Hãy thử lại
+                              sau!
+                            </BaseText>
+                          )}
+                        </YStack>
+                      )}
+                    </Card>
                     <AnalyticsKpiCards data={analyticsData} />
                     <VolumeTrendChart
                       volumeHistory={analyticsData.volumeHistory}
