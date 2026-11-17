@@ -60,7 +60,7 @@ export function TodaySessionSection({
             {onStartSession && (
               <YStack flex={1}>
                 <Action
-                  title="Bắt đầu tập ngay"
+                  title="Bắt đầu tập"
                   onPress={() => onStartSession(primaryToday)}
                 />
               </YStack>

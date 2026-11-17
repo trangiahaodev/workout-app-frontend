@@ -42,7 +42,11 @@ export const VolumeTrendChart: React.FC<Props> = ({ volumeHistory }) => {
       <XStack justifyContent="space-between" alignItems="center">
         <XStack alignItems="center" gap="$2">
           <Feather name="trending-up" size={17} color="#111111" />
-          <BaseText color="$textPrimary" fontSize={16} fontWeight="800">
+          <BaseText
+            flex={1}
+            fontSize={16}
+            fontWeight="800"
+            color="$textPrimary">
             Biến thiên khối lượng qua các buổi
           </BaseText>
         </XStack>

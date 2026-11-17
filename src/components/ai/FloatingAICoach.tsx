@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  Text,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Spinner, XStack, YStack } from "tamagui";
@@ -126,10 +127,10 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
         ]}
         accessibilityRole="button"
         accessibilityLabel="Mở trợ lý AI Coach">
-        <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-        <BaseText color="#FFFFFF" fontSize={13} fontWeight="700">
+        <Ionicons name="sparkles" size={17} color="#FFFFFF" />
+        <Text numberOfLines={1} style={styles.fabText}>
           AI Coach
-        </BaseText>
+        </Text>
       </Pressable>
 
       {/* Cửa sổ hội thoại AI Coach */}
@@ -157,8 +158,9 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
               borderBottomWidth={1}
               borderColor="$borderColor"
               alignItems="center"
-              justifyContent="space-between">
-              <XStack alignItems="center" gap="$2.5">
+              justifyContent="space-between"
+              gap="$2">
+              <XStack alignItems="center" gap="$2.5" flex={1}>
                 <YStack
                   width={36}
                   height={36}
@@ -168,23 +170,27 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
                   justifyContent="center">
                   <Ionicons name="sparkles" size={18} color="#FFFFFF" />
                 </YStack>
-                <YStack>
+                <YStack flex={1}>
                   <BaseText fontSize={16} fontWeight="800" color="$textPrimary">
                     AI Coach
                   </BaseText>
-                  <BaseText fontSize={12} color="$textSecondary">
-                    Tư vấn dựa trên hồ sơ & lịch sử tập của bạn
+                  <BaseText
+                    fontSize={12}
+                    color="$textSecondary"
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                    Tư vấn dựa trên hồ sơ & lịch sử tập
                   </BaseText>
                 </YStack>
               </XStack>
 
-              <XStack alignItems="center" gap="$3">
+              <XStack alignItems="center" gap="$3.5">
                 {messages.length > 0 && (
-                  <Pressable onPress={handleClear} hitSlop={8}>
+                  <Pressable onPress={handleClear} hitSlop={10}>
                     <Ionicons name="trash-outline" size={20} color="#8E8E93" />
                   </Pressable>
                 )}
-                <Pressable onPress={() => setVisible(false)} hitSlop={8}>
+                <Pressable onPress={() => setVisible(false)} hitSlop={10}>
                   <Ionicons name="close" size={24} color="#111111" />
                 </Pressable>
               </XStack>
@@ -341,6 +347,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
     zIndex: 999,
+  },
+  fabText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    includeFontPadding: false,
   },
   backdrop: {
     flex: 1,

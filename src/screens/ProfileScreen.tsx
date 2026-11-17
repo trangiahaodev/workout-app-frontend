@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Modal, Platform, TextInput } from "react-native";
+import {
+  Alert,
+  Modal,
+  Platform,
+  TextInput,
+  KeyboardAvoidingView,
+} from "react-native";
 import {
   CommonActions,
   NavigationAction,
@@ -264,150 +270,163 @@ function ProfileForm({ profile }: { profile: Profile | null }) {
           </Card>
         </YStack>
       </Modal>
-
-      <ScrollView ref={scroll} flex={1} showsVerticalScrollIndicator={false}>
-        <YStack
-          padding="$4"
-          gap="$4"
-          width="100%"
-          maxWidth={720}
-          alignSelf="center">
-          {pendingAction && (
-            <Card gap="$3" accessibilityRole="alert">
-              <BaseText fontWeight="700">Bạn có thay đổi chưa lưu</BaseText>
-              <BaseText color="$textSecondary">
-                Bạn muốn tiếp tục chỉnh sửa hay bỏ thay đổi để rời màn hình?
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 20}>
+        <ScrollView
+          ref={scroll}
+          flex={1}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          <YStack
+            padding="$4"
+            gap="$4"
+            width="100%"
+            maxWidth={720}
+            alignSelf="center">
+            {pendingAction && (
+              <Card gap="$3" accessibilityRole="alert">
+                <BaseText fontWeight="700">Bạn có thay đổi chưa lưu</BaseText>
+                <BaseText color="$textSecondary">
+                  Bạn muốn tiếp tục chỉnh sửa hay bỏ thay đổi để rời màn hình?
+                </BaseText>
+                <Button onPress={() => setPendingAction(null)}>
+                  Tiếp tục chỉnh sửa
+                </Button>
+                <Button
+                  onPress={() => {
+                    setDraft({
+                      userId,
+                      goal: profile?.goal ?? "Tăng cơ",
+                      level: profile?.level ?? "Beginner",
+                      trainingDaysPerWeek: profile?.trainingDaysPerWeek ?? 3,
+                    });
+                    setEdited(false);
+                    setDiscardAction(pendingAction);
+                    setPendingAction(null);
+                  }}>
+                  Bỏ thay đổi
+                </Button>
+              </Card>
+            )}
+            <YStack gap="$2">
+              <BaseText fontSize={26} fontWeight="800">
+                {profile ? "Hồ sơ tập luyện" : "Bắt đầu hành trình của bạn"}
               </BaseText>
-              <Button onPress={() => setPendingAction(null)}>
-                Tiếp tục chỉnh sửa
-              </Button>
-              <Button
-                onPress={() => {
-                  setDraft({
-                    userId,
-                    goal: profile?.goal ?? "Tăng cơ",
-                    level: profile?.level ?? "Beginner",
-                    trainingDaysPerWeek: profile?.trainingDaysPerWeek ?? 3,
-                  });
-                  setEdited(false);
-                  setDiscardAction(pendingAction);
-                  setPendingAction(null);
-                }}>
-                Bỏ thay đổi
-              </Button>
+              <BaseText color="$textSecondary">
+                {profile
+                  ? "Cập nhật mục tiêu để hệ thống thiết lập lại lộ trình tập luyện phù hợp."
+                  : "Chọn mục tiêu, trình độ và số buổi để thiết lập lộ trình đầu tiên."}
+              </BaseText>
+            </YStack>
+            <Card gap="$3" marginBottom={0}>
+              <BaseText fontWeight="700" fontSize={17}>
+                Mục tiêu tập luyện
+              </BaseText>
+              <XStack flexWrap="wrap" gap="$2" accessibilityRole="radiogroup">
+                {GOALS.map((goal) => (
+                  <Choice
+                    key={goal}
+                    value={goal}
+                    label={goal}
+                    selected={draft.goal === goal}
+                    disabled={saving}
+                    onSelect={(value) => change("goal", value)}
+                  />
+                ))}
+              </XStack>
             </Card>
-          )}
-          <YStack gap="$2">
-            <BaseText fontSize={26} fontWeight="800">
-              {profile ? "Hồ sơ tập luyện" : "Bắt đầu hành trình của bạn"}
-            </BaseText>
-            <BaseText color="$textSecondary">
-              {profile
-                ? "Cập nhật mục tiêu để hệ thống thiết lập lại lộ trình tập luyện phù hợp."
-                : "Chọn mục tiêu, trình độ và số buổi để thiết lập lộ trình đầu tiên."}
-            </BaseText>
-          </YStack>
-          <Card gap="$3" marginBottom={0}>
-            <BaseText fontWeight="700" fontSize={17}>
-              Mục tiêu tập luyện
-            </BaseText>
-            <XStack flexWrap="wrap" gap="$2" accessibilityRole="radiogroup">
-              {GOALS.map((goal) => (
-                <Choice
-                  key={goal}
-                  value={goal}
-                  label={goal}
-                  selected={draft.goal === goal}
-                  disabled={saving}
-                  onSelect={(value) => change("goal", value)}
-                />
-              ))}
-            </XStack>
-          </Card>
-          <Card gap="$3" marginBottom={0}>
-            <BaseText fontWeight="700" fontSize={17}>
-              Trình độ hiện tại
-            </BaseText>
-            <XStack flexWrap="wrap" gap="$2" accessibilityRole="radiogroup">
-              {LEVELS.map(({ value, label }) => (
-                <Choice
-                  key={value}
-                  value={value}
-                  label={label}
-                  selected={draft.level === value}
-                  disabled={saving}
-                  onSelect={(next) => change("level", next)}
-                />
-              ))}
-            </XStack>
-          </Card>
-          <Card gap="$3" marginBottom={0}>
-            <BaseText fontWeight="700" fontSize={17}>
-              Số buổi tập mỗi tuần
-            </BaseText>
-            <BaseText color="$textSecondary">
-              Đã chọn {draft.trainingDaysPerWeek} buổi / tuần
-            </BaseText>
-            <XStack flexWrap="wrap" gap="$2" accessibilityRole="radiogroup">
-              {[1, 2, 3, 4, 5, 6, 7].map((days) => (
-                <Choice
-                  key={days}
-                  value={days}
-                  label={`${days}`}
-                  selected={draft.trainingDaysPerWeek === days}
-                  disabled={saving}
-                  onSelect={(value) => change("trainingDaysPerWeek", value)}
-                />
-              ))}
-            </XStack>
-          </Card>
-          <Card gap="$2.5" marginBottom={0}>
-            <BaseText fontWeight="700" fontSize={17}>
-              Yêu cầu riêng cho AI (Tùy chọn)
-            </BaseText>
-            <BaseText fontSize={13} color="$textSecondary">
-              Mô tả dụng cụ sẵn có, nhóm cơ muốn ưu tiên hoặc lưu ý thể trạng để
-              AI thiết kế giáo án sát nhất.
-            </BaseText>
-            <TextInput
-              value={draft.customNote ?? ""}
-              onChangeText={(text) => change("customNote", text)}
-              placeholder="VD: Muốn ưu tiên lưng và vai..."
-              placeholderTextColor="#8E8E93"
-              multiline
-              numberOfLines={3}
-              editable={!saving}
-              style={{
-                minHeight: 82,
-                backgroundColor: "#F5F5F7",
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: "#E5E5EA",
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                fontSize: 14,
-                color: "#111111",
-                textAlignVertical: "top",
-              }}
-            />
-          </Card>
+            <Card gap="$3" marginBottom={0}>
+              <BaseText fontWeight="700" fontSize={17}>
+                Trình độ hiện tại
+              </BaseText>
+              <XStack flexWrap="wrap" gap="$2" accessibilityRole="radiogroup">
+                {LEVELS.map(({ value, label }) => (
+                  <Choice
+                    key={value}
+                    value={value}
+                    label={label}
+                    selected={draft.level === value}
+                    disabled={saving}
+                    onSelect={(next) => change("level", next)}
+                  />
+                ))}
+              </XStack>
+            </Card>
+            <Card gap="$3" marginBottom={0}>
+              <BaseText fontWeight="700" fontSize={17}>
+                Số buổi tập mỗi tuần
+              </BaseText>
+              <BaseText color="$textSecondary">
+                Đã chọn {draft.trainingDaysPerWeek} buổi / tuần
+              </BaseText>
+              <XStack flexWrap="wrap" gap="$2" accessibilityRole="radiogroup">
+                {[1, 2, 3, 4, 5, 6, 7].map((days) => (
+                  <Choice
+                    key={days}
+                    value={days}
+                    label={`${days}`}
+                    selected={draft.trainingDaysPerWeek === days}
+                    disabled={saving}
+                    onSelect={(value) => change("trainingDaysPerWeek", value)}
+                  />
+                ))}
+              </XStack>
+            </Card>
+            <Card gap="$2.5" marginBottom={0}>
+              <BaseText fontWeight="700" fontSize={17}>
+                Yêu cầu riêng cho AI (Tùy chọn)
+              </BaseText>
+              <BaseText fontSize={13} color="$textSecondary">
+                Mô tả dụng cụ sẵn có, nhóm cơ muốn ưu tiên hoặc lưu ý thể trạng
+                để AI thiết kế giáo án sát nhất.
+              </BaseText>
+              <TextInput
+                value={draft.customNote ?? ""}
+                onChangeText={(text) => change("customNote", text)}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scroll.current?.scrollToEnd({ animated: true });
+                  }, 150);
+                }}
+                placeholder="VD: Tập tại nhà chỉ có tạ đơn, muốn ưu tiên lưng và vai..."
+                placeholderTextColor="#8E8E93"
+                multiline
+                numberOfLines={3}
+                editable={!saving}
+                style={{
+                  minHeight: 82,
+                  backgroundColor: "#F5F5F7",
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E5EA",
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  fontSize: 14,
+                  color: "#111111",
+                  textAlignVertical: "top",
+                }}
+              />
+            </Card>
 
-          {error && <BaseText accessibilityRole="alert">{error}</BaseText>}
-          <PrimaryButton
-            title={
-              saving
-                ? "Đang lưu hồ sơ…"
-                : profile
-                  ? "Cập nhật lộ trình"
-                  : "Thiết lập lộ trình"
-            }
-            accessibilityRole="button"
-            disabled={saving || (!!profile && !dirty)}
-            onPress={handleSave}
-          />
-          <LogoutButton disabled={saving} />
-        </YStack>
-      </ScrollView>
+            {error && <BaseText accessibilityRole="alert">{error}</BaseText>}
+            <PrimaryButton
+              title={
+                saving
+                  ? "Đang lưu hồ sơ…"
+                  : profile
+                    ? "Cập nhật lộ trình"
+                    : "Thiết lập lộ trình"
+              }
+              accessibilityRole="button"
+              disabled={saving || (!!profile && !dirty)}
+              onPress={handleSave}
+            />
+            <LogoutButton disabled={saving} />
+          </YStack>
+        </ScrollView>
+      </KeyboardAvoidingView>
       <BottomNav
         activeTabId="profile"
         tabs={[
