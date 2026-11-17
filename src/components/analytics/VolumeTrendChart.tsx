@@ -47,7 +47,7 @@ export const VolumeTrendChart: React.FC<Props> = ({ volumeHistory }) => {
             fontSize={16}
             fontWeight="800"
             color="$textPrimary">
-            Biến thiên khối lượng qua các buổi
+            Khối lượng qua các buổi
           </BaseText>
         </XStack>
         <BaseText color="$textSecondary" fontSize={12}>

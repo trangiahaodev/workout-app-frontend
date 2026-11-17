@@ -1,17 +1,38 @@
 import React, { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Input, InputProps, ScrollView, YStack } from "tamagui";
 import { BaseText } from "../BaseText";
 
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function AuthLayout({ title, subtitle, children }: {
+export function AuthLayout({
+  title,
+  subtitle,
+  children,
+}: {
   title: string;
   subtitle: string;
   children: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
+
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   return (
     <YStack flex={1} backgroundColor="$background">
       <KeyboardAvoidingView
@@ -20,7 +41,10 @@ export function AuthLayout({ title, subtitle, children }: {
         <ScrollView
           flex={1}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 24 : 0,
+          }}
           showsVerticalScrollIndicator={false}>
           <YStack
             flex={1}
@@ -44,7 +68,11 @@ export function AuthLayout({ title, subtitle, children }: {
   );
 }
 
-export function AuthField({ label, error, ...inputProps }: InputProps & {
+export function AuthField({
+  label,
+  error,
+  ...inputProps
+}: InputProps & {
   label: string;
   error?: string | null;
 }) {

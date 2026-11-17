@@ -12,7 +12,7 @@ function getLocalBaseUrl(): string {
     return `http://${lanIp}:5000/api/v1`;
   }
   if (Platform.OS === "android") {
-    return "http://10.0.2.2:5000/api/v1";
+    return "http://localhost:5000/api/v1";
   }
   return "http://localhost:5000/api/v1";
 }
