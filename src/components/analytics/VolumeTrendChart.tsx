@@ -1,6 +1,6 @@
 import React from "react";
 import { ScrollView, XStack, YStack } from "tamagui";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { Card } from "../Card";
 import { BaseText } from "../BaseText";
 import { VolumeHistoryPoint } from "../../types";
@@ -39,18 +39,24 @@ export const VolumeTrendChart: React.FC<Props> = ({ volumeHistory }) => {
 
   return (
     <Card marginBottom="$4" padding="$4" gap="$3">
-      <XStack justifyContent="space-between" alignItems="center">
-        <XStack alignItems="center" gap="$2">
-          <Feather name="trending-up" size={17} color="#111111" />
+      <XStack alignItems="center" justifyContent="space-between" gap="$2">
+        <XStack alignItems="center" gap="$2" flex={1} minWidth={0}>
+          <Ionicons name="trending-up" size={18} color="#111111" />
           <BaseText
             flex={1}
             fontSize={16}
             fontWeight="800"
-            color="$textPrimary">
+            color="$textPrimary"
+            numberOfLines={1}
+            ellipsizeMode="tail">
             Khối lượng qua các buổi
           </BaseText>
         </XStack>
-        <BaseText color="$textSecondary" fontSize={12}>
+        <BaseText
+          fontSize={12}
+          fontWeight="600"
+          color="$textSecondary"
+          flexShrink={0}>
           Đơn vị: kg
         </BaseText>
       </XStack>

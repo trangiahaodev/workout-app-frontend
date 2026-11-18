@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -8,6 +9,7 @@ import {
   StyleSheet,
   TextInput,
   Text,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Spinner, XStack, YStack } from "tamagui";
@@ -38,6 +40,39 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const { height: screenHeight } = useWindowDimensions();
+  const [backdropHeight, setBackdropHeight] = useState(0);
+
+  const alreadyResizedByOS =
+    backdropHeight > 0 && screenHeight - backdropHeight > keyboardHeight * 0.7;
+
+  const effectiveBottomPadding =
+    Platform.OS === "android" && keyboardHeight > 0 && !alreadyResizedByOS
+      ? keyboardHeight
+      : 0;
+
+  // Bắt sự kiện bật/tắt bàn phím để điều chỉnh độ cao màn hình
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visible) setKeyboardHeight(0);
+  }, [visible]);
 
   // Ẩn khi chưa đăng nhập hoặc đang ở màn hình thực hành buổi tập
   const shouldHide = !userId || currentRouteName === "WorkoutSession";
@@ -141,12 +176,18 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
         onRequestClose={() => setVisible(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.backdrop}>
+          onLayout={(e) => setBackdropHeight(e.nativeEvent.layout.height)}
+          style={[
+            styles.backdrop,
+            effectiveBottomPadding > 0 && {
+              paddingBottom: effectiveBottomPadding,
+            },
+          ]}>
           <YStack
             backgroundColor="$background"
             borderTopLeftRadius={24}
             borderTopRightRadius={24}
-            height="82%"
+            height={keyboardHeight > 0 ? "92%" : "82%"}
             borderWidth={1}
             borderColor="$borderColor"
             overflow="hidden">
@@ -200,6 +241,7 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
             <ScrollView
               ref={scrollRef}
               style={{ flex: 1 }}
+              keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ padding: 16, gap: 12 }}>
               {loadingHistory ? (
                 <Spinner size="small" color="$textPrimary" marginTop="$4" />
@@ -274,6 +316,7 @@ export function FloatingAICoach({ currentRouteName }: FloatingAICoachProps) {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
               style={{ maxHeight: 44 }}
               contentContainerStyle={{
                 paddingHorizontal: 16,
